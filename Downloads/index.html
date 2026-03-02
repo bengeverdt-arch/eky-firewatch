@@ -1,0 +1,1073 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EKY Fire Radar</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Barlow:wght@300;400;500&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+:root {
+  --bg:#07090b; --s1:#0d1018; --s2:#121620; --s3:#181d28;
+  --border:#1d2230; --border2:#252c3c;
+  --accent:#ff4500; --aglow:rgba(255,69,0,.2);
+  --amber:#ffab00; --green:#00e5a0; --yellow:#ffe600;
+  --orange:#ff7700; --red:#ff2020; --extreme:#cc00ff;
+  --text:#dde4f0; --muted:#56607a; --muted2:#353d54;
+  --mono:'Share Tech Mono',monospace;
+  --cond:'Barlow Condensed',sans-serif;
+  --body:'Barlow',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--body);min-height:100vh}
+body::after{content:'';position:fixed;inset:0;
+  background-image:linear-gradient(rgba(255,69,0,.015) 1px,transparent 1px),
+                   linear-gradient(90deg,rgba(255,69,0,.015) 1px,transparent 1px);
+  background-size:40px 40px;pointer-events:none;z-index:0}
+
+/* ── SPLASH ── */
+#splash{position:fixed;inset:0;z-index:999;background:var(--bg);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;
+  transition:opacity .5s}
+#splash.out{opacity:0;pointer-events:none}
+.sp-title{font-family:var(--cond);font-size:38px;font-weight:800;letter-spacing:6px;
+  color:var(--accent);text-shadow:0 0 28px var(--aglow)}
+.sp-bar{width:260px;height:3px;background:var(--border2);border-radius:2px;overflow:hidden}
+.sp-fill{height:100%;background:var(--accent);border-radius:2px;width:0;transition:width .3s}
+#spMsg{font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:2px}
+
+/* ── HEADER ── */
+header{position:sticky;top:0;z-index:200;display:flex;align-items:center;
+  justify-content:space-between;padding:10px 24px;
+  background:rgba(7,9,11,.95);border-bottom:1px solid var(--border2);
+  backdrop-filter:blur(18px)}
+.hlogo{display:flex;align-items:center;gap:11px}
+.hfire{font-size:22px;filter:drop-shadow(0 0 7px var(--accent));
+  animation:flick 3s infinite alternate}
+@keyframes flick{0%,100%{opacity:1}47%{opacity:.85}50%{opacity:.6}53%{opacity:.85}}
+.hname{font-family:var(--cond);font-size:21px;font-weight:800;letter-spacing:4px;
+  color:var(--accent);text-shadow:0 0 14px var(--aglow);line-height:1}
+.hsub{font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:2px;margin-top:2px}
+.hmeta{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.hbadge{display:flex;align-items:center;gap:6px;background:var(--s2);
+  border:1px solid var(--border2);border-radius:3px;padding:4px 11px}
+.hblbl{font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:1.5px}
+.hbval{font-family:var(--mono);font-size:11px;color:var(--text);letter-spacing:.8px}
+.livepill{display:flex;align-items:center;gap:5px;
+  background:rgba(0,229,160,.07);border:1px solid rgba(0,229,160,.2);
+  border-radius:14px;padding:4px 11px;
+  font-family:var(--mono);font-size:10px;color:var(--green);letter-spacing:1px}
+.ldot{width:6px;height:6px;border-radius:50%;background:var(--green);
+  box-shadow:0 0 7px var(--green);animation:blink 1.5s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+.hclock{font-family:var(--mono);font-size:11px;color:var(--muted)}
+.diagbtn{font-family:var(--mono);font-size:10px;color:var(--amber);
+  background:rgba(255,171,0,.07);border:1px solid rgba(255,171,0,.2);
+  border-radius:3px;padding:4px 11px;cursor:pointer;letter-spacing:1px;
+  transition:all .2s}
+.diagbtn:hover{background:rgba(255,171,0,.14);border-color:var(--amber)}
+
+/* ── MAIN ── */
+main{position:relative;z-index:1;padding:16px 24px 24px;
+  display:grid;grid-template-columns:310px 1fr;gap:13px;
+  max-width:1460px;margin:0 auto}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── PANEL ── */
+.panel{background:var(--s1);border:1px solid var(--border);border-radius:6px;
+  overflow:hidden;animation:fadeUp .45s ease both}
+.panel:nth-child(1){animation-delay:.05s}.panel:nth-child(2){animation-delay:.1s}
+.panel:nth-child(3){animation-delay:.16s}.panel:nth-child(4){animation-delay:.22s}
+.ph{display:flex;align-items:center;justify-content:space-between;
+  padding:10px 14px;background:var(--s2);border-bottom:1px solid var(--border)}
+.ptitle{font-family:var(--cond);font-size:13px;font-weight:700;
+  letter-spacing:3px;color:var(--text);text-transform:uppercase}
+.pbadge{font-family:var(--mono);font-size:9px;color:var(--muted);
+  letter-spacing:1px;background:var(--border);padding:2px 7px;border-radius:2px}
+.refbtn{background:var(--s3);border:1px solid var(--border2);border-radius:3px;
+  padding:4px 9px;font-family:var(--mono);font-size:10px;color:var(--muted);
+  cursor:pointer;transition:all .2s;letter-spacing:1px}
+.refbtn:hover{color:var(--accent);border-color:var(--accent)}
+.refbtn.spin{color:var(--accent);animation:rot 1s linear infinite}
+@keyframes rot{to{transform:rotate(360deg)}}
+
+/* ── WX PANEL ── */
+.wxp{grid-column:1;grid-row:1/3;display:flex;flex-direction:column}
+.wxloc{padding:10px 14px;background:linear-gradient(135deg,rgba(255,69,0,.05) 0%,transparent 60%);
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between}
+.wxlocname{font-family:var(--cond);font-size:17px;font-weight:700;letter-spacing:2px}
+.wxlocsub{font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:1px;margin-top:1px}
+.wxgrid{padding:13px 14px;display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.wxcard{background:var(--s2);border:1px solid var(--border);border-radius:4px;
+  padding:10px 12px;display:flex;flex-direction:column;gap:2px;
+  position:relative;overflow:hidden}
+.wxcard::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:var(--cc,var(--border2))}
+.wclbl{font-family:var(--mono);font-size:9px;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase}
+.wcval{font-family:var(--cond);font-size:28px;font-weight:700;line-height:1;
+  color:var(--text);transition:color .3s}
+.wcunit{font-family:var(--mono);font-size:10px;color:var(--muted)}
+.wcsub{font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:.4px;margin-top:1px}
+.wxst{margin:0 14px 12px;background:var(--s3);border:1px solid var(--border);
+  border-radius:3px;padding:6px 10px;font-family:var(--mono);font-size:10px;color:var(--muted)}
+.wxst span{color:var(--amber)}
+#alertBox{margin:0 14px 12px;display:none}
+.aitem{background:rgba(255,171,0,.06);border:1px solid rgba(255,171,0,.2);
+  border-left:3px solid var(--amber);border-radius:3px;
+  padding:7px 10px;font-family:var(--mono);font-size:10px;color:var(--amber);
+  line-height:1.5;margin-bottom:5px}
+.aitem.crit{background:rgba(255,32,32,.07);border-color:rgba(255,32,32,.25);
+  border-left-color:var(--red);color:#ff8080}
+.ahead{font-size:11px;font-weight:600;letter-spacing:1px;margin-bottom:2px}
+
+/* fuel moisture */
+.fmsect{padding:0 14px 14px}
+.fmtitle{font-family:var(--mono);font-size:9px;letter-spacing:2px;color:var(--muted);
+  text-transform:uppercase;margin-bottom:6px;
+  display:flex;align-items:center;gap:7px}
+.fmtitle::after{content:'';flex:1;height:1px;background:var(--border)}
+.fmsrc{font-family:var(--mono);font-size:9px;line-height:1.5;margin-bottom:7px}
+.fmbars{display:flex;flex-direction:column;gap:6px}
+.fmrow{display:flex;align-items:center;gap:8px}
+.fmlbl{font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:1px;
+  width:46px;flex-shrink:0;text-transform:uppercase}
+.fmtrack{flex:1;height:5px;background:var(--border2);border-radius:3px;overflow:hidden}
+.fmfill{height:100%;border-radius:3px;transition:width .7s cubic-bezier(.4,0,.2,1),background .5s}
+.fmval{font-family:var(--mono);font-size:10px;font-weight:600;
+  width:36px;text-align:right;flex-shrink:0;transition:color .3s}
+.fmextra{margin-top:8px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
+.fmextra-cell{background:var(--s3);border:1px solid var(--border);border-radius:3px;
+  padding:6px 8px;text-align:center}
+.fmextra-lbl{font-family:var(--mono);font-size:8px;letter-spacing:1px;color:var(--muted2);text-transform:uppercase}
+.fmextra-val{font-family:var(--cond);font-size:18px;font-weight:700;color:var(--amber);line-height:1}
+
+/* ── DANGER ── */
+.dangp{grid-column:2;grid-row:1}
+.dangbody{padding:15px 17px;display:flex;flex-direction:column;gap:13px}
+.dangmain{display:flex;align-items:flex-start;justify-content:space-between;gap:14px}
+.drating{font-family:var(--cond);font-size:52px;font-weight:800;
+  letter-spacing:4px;line-height:1;transition:color .5s,text-shadow .5s}
+.dlbl{font-family:var(--mono);font-size:9px;letter-spacing:2px;color:var(--muted);
+  text-transform:uppercase;margin-bottom:3px}
+.dfwi{font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:4px;letter-spacing:1px}
+.dsummary{font-family:var(--mono);font-size:10px;color:var(--muted);
+  letter-spacing:.4px;text-align:right;line-height:1.6;max-width:270px}
+.dbarwrap{display:flex;flex-direction:column;gap:4px}
+.dbartrack{height:9px;background:var(--border);border-radius:5px;overflow:hidden;position:relative}
+.dbarfill{height:100%;border-radius:5px;
+  transition:width .7s cubic-bezier(.4,0,.2,1),background .5s;position:relative}
+.dbarfill::after{content:'';position:absolute;right:0;top:0;bottom:0;
+  width:3px;background:rgba(255,255,255,.3);border-radius:0 5px 5px 0}
+.dbarlbls{display:flex;justify-content:space-between;
+  font-family:var(--mono);font-size:8px;color:var(--muted);letter-spacing:.5px}
+.dbarlbls span.act{color:var(--text);font-weight:700}
+.factgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.fcard{background:var(--s2);border:1px solid var(--border);
+  border-top:2px solid var(--fc,var(--border2));
+  border-radius:4px;padding:10px 12px;display:flex;flex-direction:column;gap:3px}
+.fcname{font-family:var(--mono);font-size:9px;letter-spacing:1px;color:var(--muted);text-transform:uppercase}
+.fcval{font-family:var(--cond);font-size:25px;font-weight:700;line-height:1;transition:color .3s}
+.fcdesc{font-family:var(--mono);font-size:9px;color:var(--muted)}
+
+/* ── SPREAD ── */
+.spreadp{grid-column:2;grid-row:2}
+.spreadbody{padding:13px 17px;display:grid;grid-template-columns:185px 1fr;gap:13px;align-items:start}
+.ewrap{position:relative;width:185px;height:185px;
+  display:flex;align-items:center;justify-content:center}
+.ering{position:absolute;border-radius:50%}
+.eblob{position:absolute;transition:all .6s cubic-bezier(.4,0,.2,1)}
+.eorigin{position:absolute;width:7px;height:7px;background:white;border-radius:50%;
+  box-shadow:0 0 10px white;z-index:2}
+.eclbl{position:absolute;font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:1px}
+.ec-n{top:3px;left:50%;transform:translateX(-50%)}
+.ec-s{bottom:3px;left:50%;transform:translateX(-50%)}
+.ec-e{right:1px;top:50%;transform:translateY(-50%)}
+.ec-w{left:1px;top:50%;transform:translateY(-50%)}
+.sspanel{display:flex;flex-direction:column;gap:8px}
+.ssrow{display:flex;align-items:center;justify-content:space-between;
+  padding:8px 12px;background:var(--s2);border:1px solid var(--border);border-radius:4px}
+.sslbl{font-family:var(--mono);font-size:10px;letter-spacing:1px;color:var(--muted);text-transform:uppercase}
+.ssval{font-family:var(--cond);font-size:21px;font-weight:700;line-height:1;
+  color:var(--text);transition:color .3s}
+.ssunit{font-family:var(--mono);font-size:10px;color:var(--muted);margin-left:2px}
+.safebox{padding:10px 13px;border-radius:4px;border:1px solid;text-align:center;transition:all .4s}
+.safelbl{font-family:var(--mono);font-size:9px;letter-spacing:2px;text-transform:uppercase;margin-bottom:3px}
+.safeval{font-family:var(--cond);font-size:15px;font-weight:800;letter-spacing:3px}
+.projgrid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.projcell{background:var(--s3);border:1px solid var(--border);border-radius:3px;padding:7px 10px}
+.projlbl{font-family:var(--mono);font-size:9px;letter-spacing:1px;color:var(--muted);
+  text-transform:uppercase;margin-bottom:2px}
+.projval{font-family:var(--cond);font-size:16px;font-weight:700;color:var(--amber);line-height:1}
+.wctl{display:flex;flex-direction:column;gap:4px}
+.wctllbl{font-family:var(--mono);font-size:9px;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase}
+.dbtns{display:flex;gap:3px;flex-wrap:wrap}
+.dbtn{font-family:var(--mono);font-size:10px;padding:3px 7px;
+  background:var(--s2);border:1px solid var(--border);border-radius:3px;
+  color:var(--muted);cursor:pointer;transition:all .15s}
+.dbtn:hover,.dbtn.act{background:var(--accent);border-color:var(--accent);color:white}
+
+/* ── MAP SECTION ── */
+.kymap-section{grid-column:1/-1;background:var(--s1);border:1px solid var(--border);
+  border-radius:6px;overflow:hidden;animation:fadeUp .45s .26s ease both}
+.maptabs{display:flex;background:var(--s2);border-bottom:1px solid var(--border);
+  padding:0 16px;overflow-x:auto}
+.mtab{font-family:var(--mono);font-size:10px;letter-spacing:1.5px;text-transform:uppercase;
+  color:var(--muted);padding:11px 13px;border-bottom:2px solid transparent;
+  cursor:pointer;transition:all .2s;white-space:nowrap}
+.mtab:hover{color:var(--text)}.mtab.act{color:var(--accent);border-bottom-color:var(--accent)}
+.tbadge{display:inline-block;background:var(--accent);color:white;font-size:8px;
+  padding:1px 5px;border-radius:7px;margin-left:5px;vertical-align:middle}
+.mapstrip{display:flex;align-items:center;justify-content:space-between;
+  padding:7px 17px;background:rgba(255,69,0,.03);border-bottom:1px solid var(--border);
+  flex-wrap:wrap;gap:6px}
+.msrc{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.4px}
+.msrc strong{color:var(--amber)}
+.mopen{font-family:var(--mono);font-size:10px;color:var(--accent);text-decoration:none;
+  border:1px solid rgba(255,69,0,.3);padding:3px 10px;border-radius:3px;
+  letter-spacing:1px;text-transform:uppercase;transition:all .2s}
+.mopen:hover{background:rgba(255,69,0,.1);border-color:var(--accent)}
+.mpane{display:none}.mpane.act{display:block}
+#kyMapDiv{height:500px;background:#0a0c10}
+.leaflet-container{background:#0a0c10!important}
+.leaflet-tile-pane{filter:brightness(.65) saturate(.5) hue-rotate(190deg)}
+#mapLegend{position:absolute;bottom:18px;left:18px;z-index:500;
+  background:rgba(7,9,11,.92);border:1px solid var(--border2);border-radius:4px;
+  padding:10px 13px;font-family:var(--mono);font-size:10px;color:var(--muted)}
+.legrow{display:flex;align-items:center;gap:7px;margin-bottom:4px}
+.legdot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+#mapStatus{font-family:var(--mono);font-size:10px;color:var(--muted);
+  padding:6px 17px;border-bottom:1px solid var(--border);
+  background:var(--s2)}
+iframe{width:100%;height:500px;border:none;display:block}
+.qlbar{display:grid;grid-template-columns:repeat(auto-fill,minmax(175px,1fr));
+  gap:6px;padding:11px 17px;border-top:1px solid var(--border)}
+.ql{display:flex;align-items:center;gap:8px;background:var(--s2);border:1px solid var(--border);
+  border-radius:4px;padding:8px 10px;text-decoration:none;transition:all .2s}
+.ql:hover{border-color:var(--accent);background:rgba(255,69,0,.04)}
+.qlico{font-size:13px;flex-shrink:0}
+.qln{font-family:var(--mono);font-size:10px;color:var(--text);letter-spacing:.4px;display:block}
+.qld{font-family:var(--mono);font-size:9px;color:var(--muted);display:block;margin-top:1px}
+
+/* ── DIAGNOSTICS PANEL ── */
+#diagPanel{position:fixed;inset:0;z-index:800;background:rgba(0,0,0,.85);
+  display:flex;align-items:center;justify-content:center;padding:20px}
+#diagPanel.hidden{display:none}
+.diagbox{background:var(--s1);border:1px solid var(--amber);border-radius:8px;
+  width:100%;max-width:900px;max-height:90vh;display:flex;flex-direction:column;overflow:hidden}
+.diaghead{display:flex;align-items:center;justify-content:space-between;
+  padding:14px 18px;background:rgba(255,171,0,.07);border-bottom:1px solid rgba(255,171,0,.2)}
+.diagtitle{font-family:var(--cond);font-size:18px;font-weight:700;
+  letter-spacing:3px;color:var(--amber);text-transform:uppercase}
+.diagclose{font-family:var(--mono);font-size:11px;color:var(--muted);
+  background:var(--s2);border:1px solid var(--border);border-radius:3px;
+  padding:5px 12px;cursor:pointer;transition:all .2s;letter-spacing:1px}
+.diagclose:hover{color:var(--red);border-color:var(--red)}
+.diagbody{padding:14px 18px;overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:10px}
+.diagsummary{font-family:var(--mono);font-size:10px;color:var(--muted);
+  line-height:1.6;padding:10px 14px;background:var(--s2);
+  border:1px solid var(--border);border-radius:4px}
+.diagsummary strong{color:var(--text)}
+.diaglog{background:var(--bg);border:1px solid var(--border2);border-radius:4px;
+  padding:10px 14px;font-family:var(--mono);font-size:10px;line-height:1.7;
+  overflow-x:auto;white-space:pre;max-height:400px;overflow-y:auto}
+.diagactions{display:flex;gap:8px;flex-wrap:wrap}
+.diagaction{font-family:var(--mono);font-size:10px;padding:6px 14px;border-radius:3px;
+  cursor:pointer;transition:all .2s;letter-spacing:1px;border:1px solid}
+.da-copy{color:var(--green);border-color:rgba(0,229,160,.3);background:rgba(0,229,160,.05)}
+.da-copy:hover{background:rgba(0,229,160,.12)}
+.da-retry{color:var(--accent);border-color:rgba(255,69,0,.3);background:rgba(255,69,0,.05)}
+.da-retry:hover{background:rgba(255,69,0,.12)}
+/* log entry colors */
+.log-ok{color:var(--green)}
+.log-err{color:var(--red)}
+.log-warn{color:var(--amber)}
+.log-info{color:var(--muted)}
+.log-data{color:#74b9ff}
+.log-head{color:var(--text);font-weight:700}
+
+/* ── FOOTER ── */
+footer{position:relative;z-index:1;margin:0 24px 20px;display:flex;flex-direction:column;gap:6px}
+.disc{background:rgba(255,171,0,.04);border:1px solid rgba(255,171,0,.12);
+  border-radius:4px;padding:8px 13px;font-family:var(--mono);font-size:10px;
+  color:rgba(255,171,0,.6);letter-spacing:.3px;line-height:1.6}
+.fbar{display:flex;align-items:center;justify-content:space-between;
+  padding:8px 13px;background:var(--s1);border:1px solid var(--border);border-radius:4px;
+  font-family:var(--mono);font-size:10px;color:var(--muted);flex-wrap:wrap;gap:5px}
+.fbar a{color:var(--amber);text-decoration:none}
+.fbar a:hover{text-decoration:underline}
+
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+
+/* ── FORECAST PANEL ── */
+.fcastp{grid-column:2;grid-row:2}
+.fcastbody{padding:13px 17px;display:flex;flex-direction:column;gap:10px}
+.fcastgrid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.fcastday{background:var(--s2);border:1px solid var(--border);border-radius:4px;
+  padding:10px 12px;display:flex;flex-direction:column;gap:6px;position:relative;overflow:hidden}
+.fcastday::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:var(--fc-top,var(--border2))}
+.fcastdate{font-family:var(--mono);font-size:9px;letter-spacing:1.5px;
+  color:var(--muted);text-transform:uppercase}
+.fcastdow{font-family:var(--cond);font-size:16px;font-weight:700;
+  color:var(--text);line-height:1}
+.fcastrow{display:flex;align-items:center;justify-content:space-between;gap:4px}
+.fcastlbl{font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:.8px;text-transform:uppercase}
+.fcastval{font-family:var(--cond);font-size:17px;font-weight:700;line-height:1;transition:color .3s}
+.fcastunit{font-family:var(--mono);font-size:9px;color:var(--muted)}
+.fcastshort{font-family:var(--mono);font-size:9px;color:var(--muted);
+  margin-top:2px;line-height:1.4;border-top:1px solid var(--border);padding-top:5px}
+.fcasttrend{background:var(--s3);border:1px solid var(--border);border-radius:3px;
+  padding:8px 12px;font-family:var(--mono);font-size:10px;color:var(--muted);line-height:1.6}
+.fcasttrend span{color:var(--amber)}
+
+@media(max-width:880px){
+  main{grid-template-columns:1fr;padding:12px}
+  .wxp,.dangp,.fcastp{grid-column:1;grid-row:auto}
+  .kymap-section{grid-column:1}
+  .fcastgrid{grid-template-columns:repeat(2,1fr)}
+  header{padding:8px 14px;flex-wrap:wrap;gap:6px}
+  footer{margin:0 12px 18px}
+}
+</style>
+</head>
+<body>
+
+<!-- SPLASH -->
+<div id="splash">
+  <div class="sp-title">🔥 EKY FIRE RADAR</div>
+  <div class="sp-bar"><div class="sp-fill" id="spFill"></div></div>
+  <div id="spMsg">INITIALIZING...</div>
+</div>
+
+<!-- DIAGNOSTICS PANEL -->
+<div id="diagPanel" class="hidden">
+  <div class="diagbox">
+    <div class="diaghead">
+      <span class="diagtitle">🔧 Diagnostics Log</span>
+      <button class="diagclose" onclick="closeDiag()">✕ CLOSE</button>
+    </div>
+    <div class="diagbody">
+      <div class="diagsummary" id="diagSummary">Running diagnostics...</div>
+      <div class="diagactions">
+        <button class="diagaction da-copy" onclick="copyLog()">📋 COPY LOG TO CLIPBOARD</button>
+        <button class="diagaction da-retry" onclick="closeDiag();loadAll()">↻ RETRY ALL</button>
+      </div>
+      <div class="diaglog" id="diagLog">Loading...</div>
+    </div>
+  </div>
+</div>
+
+<header>
+  <div class="hlogo">
+    <span class="hfire">🔥</span>
+    <div>
+      <div class="hname">EKY FIRE RADAR</div>
+      <div class="hsub">EAST KENTUCKY WILDFIRE OPS — LONDON KY</div>
+    </div>
+  </div>
+  <div class="hmeta">
+    <div class="hbadge"><span class="hblbl">RAWS</span><span class="hbval" id="hRaws">—</span></div>
+    <div class="hbadge"><span class="hblbl">UPDATED</span><span class="hbval" id="hUpdated">—</span></div>
+    <div class="livepill"><div class="ldot"></div><span>NWS + FEMS</span></div>
+    <button class="diagbtn" onclick="openDiag()">🔧 DIAGNOSTICS</button>
+    <div class="hclock" id="clk"></div>
+  </div>
+</header>
+
+<main>
+
+  <!-- WX PANEL -->
+  <div class="panel wxp">
+    <div class="ph">
+      <span class="ptitle">LIVE CONDITIONS</span>
+      <button class="refbtn" id="refBtn" onclick="loadAll()">↻ REFRESH</button>
+    </div>
+    <div class="wxloc">
+      <div>
+        <div class="wxlocname">LONDON, KY</div>
+        <div class="wxlocsub">LAUREL CO · 37.129°N 84.083°W · ~1145 FT</div>
+      </div>
+    </div>
+    <div class="wxgrid">
+      <div class="wxcard" style="--cc:#ff4500">
+        <span class="wclbl">Temperature</span>
+        <span class="wcval" id="wTemp">--</span><span class="wcunit">°F</span>
+        <span class="wcsub" id="wTempSub">—</span>
+      </div>
+      <div class="wxcard" style="--cc:#0090ff">
+        <span class="wclbl">Rel. Humidity</span>
+        <span class="wcval" id="wRH">--</span><span class="wcunit">%</span>
+        <span class="wcsub" id="wRHSub">—</span>
+      </div>
+      <div class="wxcard" style="--cc:#00c8ff">
+        <span class="wclbl">Wind Speed</span>
+        <span class="wcval" id="wWind">--</span><span class="wcunit">mph</span>
+        <span class="wcsub" id="wWindDir">—</span>
+      </div>
+      <div class="wxcard" style="--cc:#9b59b6">
+        <span class="wclbl">Wind Gust</span>
+        <span class="wcval" id="wGust">--</span><span class="wcunit">mph</span>
+        <span class="wcsub">Peak gust</span>
+      </div>
+      <div class="wxcard" style="--cc:#00b894">
+        <span class="wclbl">Dewpoint</span>
+        <span class="wcval" id="wDew">--</span><span class="wcunit">°F</span>
+        <span class="wcsub" id="wDewSub">—</span>
+      </div>
+      <div class="wxcard" style="--cc:#fdcb6e">
+        <span class="wclbl">Precip (1hr)</span>
+        <span class="wcval" id="wPrecip">--</span><span class="wcunit">in</span>
+        <span class="wcsub">Last hour</span>
+      </div>
+    </div>
+    <div class="wxst" id="wxSt">NWS STATION: <span id="stName">loading...</span></div>
+    <div id="alertBox"></div>
+    <div class="fmsect">
+      <div class="fmtitle">DEAD FUEL MOISTURE</div>
+      <div id="fmSrc" class="fmsrc" style="color:var(--muted);font-style:italic;font-family:var(--mono);font-size:9px">Fetching FEMS RAWS data...</div>
+      <div class="fmbars">
+        <div class="fmrow"><span class="fmlbl">1-hr</span><div class="fmtrack"><div class="fmfill" id="fm1b"></div></div><span class="fmval" id="fm1v">—</span></div>
+        <div class="fmrow"><span class="fmlbl">10-hr</span><div class="fmtrack"><div class="fmfill" id="fm10b"></div></div><span class="fmval" id="fm10v">—</span></div>
+        <div class="fmrow"><span class="fmlbl">100-hr</span><div class="fmtrack"><div class="fmfill" id="fm100b"></div></div><span class="fmval" id="fm100v">—</span></div>
+        <div class="fmrow"><span class="fmlbl">1000-hr</span><div class="fmtrack"><div class="fmfill" id="fm1000b"></div></div><span class="fmval" id="fm1000v">—</span></div>
+      </div>
+      <div class="fmextra">
+        <div class="fmextra-cell"><div class="fmextra-lbl">ERC</div><div class="fmextra-val" id="fmERC">—</div></div>
+        <div class="fmextra-cell"><div class="fmextra-lbl">BI</div><div class="fmextra-val" id="fmBI">—</div></div>
+        <div class="fmextra-cell"><div class="fmextra-lbl">KBDI</div><div class="fmextra-val" id="fmKBDI">—</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DANGER PANEL -->
+  <div class="panel dangp">
+    <div class="ph"><span class="ptitle">FIRE DANGER INDEX</span><span class="pbadge">NFDRS / FOSBERG FWI</span></div>
+    <div class="dangbody">
+      <div class="dangmain">
+        <div>
+          <div class="dlbl">Current Rating</div>
+          <div class="drating" id="dRating">—</div>
+          <div class="dfwi" id="dFWI">FWI: —</div>
+        </div>
+        <div class="dsummary" id="dSummary">Loading live data...</div>
+      </div>
+      <div class="dbarwrap">
+        <div class="dbartrack"><div class="dbarfill" id="dBar" style="width:0%;background:var(--green)"></div></div>
+        <div class="dbarlbls">
+          <span id="dl0">LOW</span><span id="dl1">MODERATE</span>
+          <span id="dl2">HIGH</span><span id="dl3">V.HIGH</span><span id="dl4">EXTREME</span>
+        </div>
+      </div>
+      <div class="factgrid">
+        <div class="fcard" id="fc0"><span class="fcname">Ignition Prob.</span><span class="fcval" id="fv0">—</span><span class="fcdesc">% chance</span></div>
+        <div class="fcard" id="fc1"><span class="fcname">Spread Index</span><span class="fcval" id="fv1">—</span><span class="fcdesc">0–100 scale</span></div>
+        <div class="fcard" id="fc2"><span class="fcname">Energy Release</span><span class="fcval" id="fv2">—</span><span class="fcdesc">ERC from RAWS</span></div>
+        <div class="fcard" id="fc3"><span class="fcname">Burning Index</span><span class="fcval" id="fv3">—</span><span class="fcdesc">BI from RAWS</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FORECAST PANEL -->
+  <div class="panel fcastp">
+    <div class="ph">
+      <span class="ptitle">5-DAY FIRE WEATHER FORECAST</span>
+      <span class="pbadge">NWS · LONDON KY</span>
+    </div>
+    <div class="fcastbody">
+      <div class="fcastgrid" id="fcastGrid">
+        <!-- filled by JS -->
+        <div class="fcastday" style="grid-column:1/-1;text-align:center;padding:20px">
+          <span style="font-family:var(--mono);font-size:10px;color:var(--muted)">Loading forecast...</span>
+        </div>
+      </div>
+      <div class="fcasttrend" id="fcastTrend">Loading trend analysis...</div>
+    </div>
+  </div>
+
+  <!-- MAP SECTION -->
+  <div class="kymap-section">
+    <div class="ph"><span class="ptitle">FIRE MAP — EAST KENTUCKY</span><span class="pbadge">Multi-Source</span></div>
+    <div class="maptabs">
+      <div class="mtab act" onclick="switchTab(this,'custom')">KY Live Map <span class="tbadge">LIVE</span></div>
+      <div class="mtab" onclick="switchTab(this,'kdf')">KDF fiResponse</div>
+      <div class="mtab" onclick="switchTab(this,'firms')">NASA FIRMS</div>
+      <div class="mtab" onclick="switchTab(this,'nifc')">NIFC InciWeb</div>
+      <div class="mtab" onclick="switchTab(this,'nws')">NWS Fire Wx</div>
+      <div class="mtab" onclick="switchTab(this,'drought')">Drought Monitor</div>
+    </div>
+    <div class="mpane act" id="tab-custom">
+      <div id="mapStatus" style="color:var(--muted)">Initializing fire map...</div>
+      <div style="position:relative">
+        <div id="kyMapDiv"></div>
+        <div id="mapLegend">
+          <div style="font-family:var(--mono);font-size:9px;letter-spacing:1.5px;color:var(--muted);margin-bottom:6px">LEGEND</div>
+          <div class="legrow"><div class="legdot" style="background:#ff2020"></div><span>Active Fire (FIRMS VIIRS)</span></div>
+          <div class="legrow"><div class="legdot" style="background:#ff8c00"></div><span>IRWIN Incident</span></div>
+          <div class="legrow"><div class="legdot" style="background:var(--amber);border:2px solid var(--accent)"></div><span>RAWS Station #12120</span></div>
+          <div class="legrow"><div class="legdot" style="background:rgba(0,229,160,.35);border:2px solid var(--green)"></div><span>London KY (Base)</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="mpane" id="tab-kdf">
+      <div class="mapstrip"><span class="msrc">SOURCE: <strong>Kentucky Division of Forestry / Technosylva fiResponse</strong></span><a class="mopen" href="https://kdf.firesponse.com/public/" target="_blank">↗ Open KDF Map</a></div>
+      <iframe src="https://kdf.firesponse.com/public/" loading="lazy" title="KDF Fire Map"></iframe>
+    </div>
+    <div class="mpane" id="tab-firms">
+      <div class="mapstrip"><span class="msrc">SOURCE: <strong>NASA FIRMS</strong> — MODIS + VIIRS Satellite Thermal · 24hr · East KY</span><a class="mopen" href="https://firms.modaps.eosdis.nasa.gov/map/#d:24hrs;@-83.0,37.5,8z" target="_blank">↗ Open FIRMS</a></div>
+      <iframe src="https://firms.modaps.eosdis.nasa.gov/map/#d:24hrs;@-83.0,37.5,8z" loading="lazy" title="NASA FIRMS"></iframe>
+    </div>
+    <div class="mpane" id="tab-nifc">
+      <div class="mapstrip"><span class="msrc">SOURCE: <strong>NIFC InciWeb</strong> — Active incident reports &amp; perimeters</span><a class="mopen" href="https://inciweb.wildfire.gov/" target="_blank">↗ Open InciWeb</a></div>
+      <iframe src="https://inciweb.wildfire.gov/" loading="lazy" title="InciWeb"></iframe>
+    </div>
+    <div class="mpane" id="tab-nws">
+      <div class="mapstrip"><span class="msrc">SOURCE: <strong>NOAA/NWS Louisville (LMK)</strong> — Fire weather forecasts &amp; Red Flag Warnings</span><a class="mopen" href="https://www.weather.gov/lmk/" target="_blank">↗ NWS LMK</a></div>
+      <iframe src="https://www.weather.gov/lmk/" loading="lazy" title="NWS LMK"></iframe>
+    </div>
+    <div class="mpane" id="tab-drought">
+      <div class="mapstrip"><span class="msrc">SOURCE: <strong>NDMC</strong> — U.S. Drought Monitor · Kentucky</span><a class="mopen" href="https://droughtmonitor.unl.edu/CurrentMap/StateDroughtMonitor.aspx?KY" target="_blank">↗ Drought Monitor</a></div>
+      <iframe src="https://droughtmonitor.unl.edu/CurrentMap/StateDroughtMonitor.aspx?KY" loading="lazy" title="Drought Monitor"></iframe>
+    </div>
+    <div class="qlbar">
+      <a class="ql" href="https://kdf.firesponse.com/public/" target="_blank"><span class="qlico">🏛️</span><span><span class="qln">KDF Fire Response</span><span class="qld">Official KY state fire map</span></span></a>
+      <a class="ql" href="https://inciweb.wildfire.gov/" target="_blank"><span class="qlico">🗺️</span><span><span class="qln">InciWeb</span><span class="qld">Active incident reports</span></span></a>
+      <a class="ql" href="https://firms.modaps.eosdis.nasa.gov/map/#d:24hrs;@-83.0,37.5,8z" target="_blank"><span class="qlico">🛰️</span><span><span class="qln">NASA FIRMS</span><span class="qld">Satellite thermal detections</span></span></a>
+      <a class="ql" href="https://www.weather.gov/lmk/fire_weather" target="_blank"><span class="qlico">🌬️</span><span><span class="qln">NWS Fire Weather</span><span class="qld">Red Flag Warnings / LMK</span></span></a>
+      <a class="ql" href="https://gacc.nifc.gov/sacc/" target="_blank"><span class="qlico">🔥</span><span><span class="qln">SACC</span><span class="qld">Southern Area GACC (KY)</span></span></a>
+      <a class="ql" href="https://fems.fs2c.usda.gov/ui" target="_blank"><span class="qlico">📊</span><span><span class="qln">FEMS</span><span class="qld">RAWS &amp; NFDRS fire danger</span></span></a>
+      <a class="ql" href="https://www.fs.usda.gov/daniel-boone" target="_blank"><span class="qlico">🌲</span><span><span class="qln">Daniel Boone NF</span><span class="qld">USFS Region 8</span></span></a>
+      <a class="ql" href="https://droughtmonitor.unl.edu/CurrentMap/StateDroughtMonitor.aspx?KY" target="_blank"><span class="qlico">🌡️</span><span><span class="qln">Drought Monitor KY</span><span class="qld">Fuel dryness conditions</span></span></a>
+    </div>
+  </div>
+
+</main>
+
+<footer>
+  <div class="disc">⚠️ OPERATIONAL DISCLAIMER — Informational aid only. Fuel moisture from FEMS RAWS station 12120 (Daniel Boone NF). Fire behavior models are simplified — not FARSITE outputs. Always verify with dispatch and qualified FBAN before any suppression decisions.</div>
+  <div class="fbar">
+    <span>EKY FIRE WATCH v4.0 — London KY · Laurel County · Daniel Boone NF</span>
+    <span><a href="https://kdf.firesponse.com/public/" target="_blank">KDF</a> · <a href="https://api.weather.gov" target="_blank">NWS</a> · <a href="https://fems.fs2c.usda.gov" target="_blank">FEMS</a> · <a href="https://firms.modaps.eosdis.nasa.gov" target="_blank">FIRMS</a> · <a href="https://irwin.doi.gov" target="_blank">IRWIN</a></span>
+    <span id="fTime"></span>
+  </div>
+</footer>
+
+<script>
+// ═══════════════════════════════════════════════════════
+// WORKER URL — your Cloudflare backend
+// ═══════════════════════════════════════════════════════
+const WORKER = 'https://dark-recipe-12d3.bengeverdt.workers.dev';
+
+// ═══════════════════════════════════════════════════════
+// DIAGNOSTICS ENGINE
+// ═══════════════════════════════════════════════════════
+const DIAG = {
+  entries: [],
+  log(level, source, message, detail='') {
+    const ts = new Date().toLocaleTimeString('en-US',{hour12:false,hour:'2-digit',minute:'2-digit',second:'2-digit'});
+    this.entries.push({ts, level, source, message, detail});
+    this.render();
+  },
+  ok(src, msg, detail='')   { this.log('OK',   src, msg, detail); },
+  err(src, msg, detail='')  { this.log('ERR',  src, msg, detail); },
+  warn(src, msg, detail='') { this.log('WARN', src, msg, detail); },
+  info(src, msg, detail='') { this.log('INFO', src, msg, detail); },
+  render() {
+    const el = document.getElementById('diagLog');
+    if (!el) return;
+    const colorMap = { OK:'log-ok', ERR:'log-err', WARN:'log-warn', INFO:'log-info' };
+    el.innerHTML = this.entries.map(e => {
+      const cls = colorMap[e.level] || 'log-info';
+      const det = e.detail ? `\n          ${e.detail.substring(0,200)}` : '';
+      return `<span class="${cls}">[${e.ts}] [${e.level.padEnd(4)}] [${e.source.padEnd(12)}] ${e.message}${det}</span>`;
+    }).join('\n');
+    el.scrollTop = el.scrollHeight;
+    this.updateSummary();
+  },
+  updateSummary() {
+    const el = document.getElementById('diagSummary');
+    if (!el) return;
+    const oks  = this.entries.filter(e=>e.level==='OK').length;
+    const errs = this.entries.filter(e=>e.level==='ERR').length;
+    const warns= this.entries.filter(e=>e.level==='WARN').length;
+    const last = this.entries[this.entries.length-1];
+    el.innerHTML = `
+      <strong>Status:</strong> ${oks} OK · ${errs} errors · ${warns} warnings<br>
+      <strong>Last event:</strong> ${last ? `[${last.level}] ${last.source} — ${last.message}` : 'none'}<br>
+      <strong>Total log entries:</strong> ${this.entries.length}<br>
+      <span style="color:var(--muted2)">Paste this log to Claude to diagnose any issues.</span>
+    `;
+  },
+  toText() {
+    return 'EKY FIRE WATCH v4 — DIAGNOSTICS LOG\n' +
+           '====================================\n' +
+           `Generated: ${new Date().toISOString()}\n\n` +
+           this.entries.map(e =>
+             `[${e.ts}] [${e.level}] [${e.source}] ${e.message}${e.detail ? '\n  DETAIL: '+e.detail : ''}`
+           ).join('\n');
+  }
+};
+
+function openDiag()  { document.getElementById('diagPanel').classList.remove('hidden'); DIAG.render(); }
+function closeDiag() { document.getElementById('diagPanel').classList.add('hidden'); }
+function copyLog()   {
+  navigator.clipboard.writeText(DIAG.toText()).then(()=>{
+    const btn = document.querySelector('.da-copy');
+    btn.textContent = '✓ COPIED!';
+    setTimeout(()=>btn.textContent='📋 COPY LOG TO CLIPBOARD', 2000);
+  }).catch(()=> alert('Copy failed — select the log text manually'));
+}
+
+// ═══════════════════════════════════════════════════════
+// WORKER FETCH — calls your Cloudflare backend
+// No CORS issues — your browser trusts your own Worker
+// ═══════════════════════════════════════════════════════
+async function workerFetch(endpoint, label) {
+  const url = `${WORKER}${endpoint}`;
+  DIAG.info(label, `GET ${url}`);
+  try {
+    const res = await fetch(url);
+    if (!res.ok) {
+      DIAG.err(label, `Worker returned HTTP ${res.status}`, await res.text().catch(()=>''));
+      return null;
+    }
+    const data = await res.json();
+    if (data?.error) {
+      DIAG.err(label, `Worker error: ${data.message}`, data.detail||'');
+      return null;
+    }
+    DIAG.ok(label, `Success — ${JSON.stringify(data).length} bytes`, JSON.stringify(data).substring(0,120));
+    return data;
+  } catch(e) {
+    DIAG.err(label, `Fetch failed`, e.message);
+    return null;
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════
+const LAT=37.129, LON=-84.083;
+const FEMS_STATION=12120;
+let wx={temp:null,rh:null,wind:null,gust:null,dew:null,precip:null,windDirDeg:null};
+let fm={fm1:null,fm10:null,fm100:null,fm1000:null,erc:null,bi:null,kbdi:null};
+let windDeg=90, kyMap=null;
+
+// ═══════════════════════════════════════════════════════
+// CLOCK
+// ═══════════════════════════════════════════════════════
+function tick(){
+  const s=new Date().toLocaleTimeString('en-US',{hour12:true,hour:'2-digit',minute:'2-digit',second:'2-digit'})
+          +' · '+new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+  document.getElementById('clk').textContent=s;
+  document.getElementById('fTime').textContent=s;
+}
+setInterval(tick,1000); tick();
+
+// ═══════════════════════════════════════════════════════
+// TABS
+// ═══════════════════════════════════════════════════════
+function switchTab(tab,id){
+  document.querySelectorAll('.mtab').forEach(t=>t.classList.remove('act'));
+  document.querySelectorAll('.mpane').forEach(p=>p.classList.remove('act'));
+  tab.classList.add('act');
+  document.getElementById('tab-'+id).classList.add('act');
+}
+function setWD(btn,deg){
+  document.querySelectorAll('#dbtns .dbtn').forEach(b=>b.classList.remove('act'));
+  btn.classList.add('act'); windDeg=deg; recalc();
+}
+
+// ═══════════════════════════════════════════════════════
+// NWS WEATHER — via Worker
+// ═══════════════════════════════════════════════════════
+async function fetchNWS(){
+  setSplash('FETCHING NWS WEATHER DATA...', 15);
+  DIAG.info('NWS', `Calling Worker /nws endpoint`);
+
+  const data = await workerFetch('/nws', 'NWS');
+  if (!data) { setWxFallback(); return; }
+
+  wx = {
+    temp:       data.temp,
+    rh:         data.rh,
+    wind:       data.wind,
+    gust:       data.gust,
+    dew:        data.dew,
+    precip:     data.precip,
+    windDirDeg: data.windDir,
+  };
+
+  DIAG.ok('NWS', `temp=${wx.temp}°F rh=${wx.rh}% wind=${wx.wind}mph gust=${wx.gust}mph dew=${wx.dew}°F`);
+
+  document.getElementById('stName').textContent =
+    `${data.station?.name || '—'} (${data.station?.id || '—'})`;
+  document.getElementById('hRaws').textContent = data.station?.id || '—';
+
+  const ts = data.timestamp ? new Date(data.timestamp) : null;
+  if(ts) document.getElementById('hUpdated').textContent =
+    ts.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}) + ' ' +
+    ts.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+
+  updateWxCards();
+  if(wx.windDirDeg != null) autoWindDir(wx.windDirDeg);
+
+  // Alerts non-blocking
+  workerFetch('/alerts','NWS-ALRT').then(showAlerts).catch(e=>DIAG.warn('NWS-ALRT','Alert fetch error',e.message));
+}
+
+function setWxFallback(){
+  DIAG.warn('NWS','Using hardcoded fallback values — wx data unavailable');
+  wx={temp:72,rh:38,wind:12,gust:18,dew:42,precip:0,windDirDeg:225};
+  document.getElementById('stName').textContent='API unavailable — estimated values';
+  document.getElementById('hRaws').textContent='OFFLINE';
+  updateWxCards();
+}
+
+// ═══════════════════════════════════════════════════════
+// FEMS RAWS — via Worker
+// ═══════════════════════════════════════════════════════
+async function fetchFEMS(){
+  setSplash('FETCHING FEMS RAWS FUEL MOISTURE...', 45);
+  DIAG.info('FEMS', `Calling Worker /fems endpoint (station ${FEMS_STATION})`);
+
+  const data = await workerFetch('/fems', 'FEMS');
+  if (!data) { useFMEstimate(); return; }
+
+  // Log column headers for debugging
+  if (data.header) DIAG.info('FEMS', `CSV columns: ${data.header.join(', ')}`);
+
+  fm = {
+    fm1:   data.fm1hr,
+    fm10:  data.fm10hr,
+    fm100: data.fm100hr,
+    fm1000:data.fm1000hr,
+    erc:   data.erc,
+    bi:    data.bi,
+    kbdi:  data.kbdi,
+  };
+
+  DIAG.ok('FEMS', `station="${data.stationName}" date="${data.obsDate}" 1hr=${fm.fm1} 10hr=${fm.fm10} 100hr=${fm.fm100} ERC=${fm.erc} BI=${fm.bi} KBDI=${fm.kbdi}`);
+
+  if (fm.fm1==null && fm.fm10==null && fm.fm100==null) {
+    DIAG.warn('FEMS','All FM values null — check Worker CSV parsing');
+    useFMEstimate(); return;
+  }
+
+  document.getElementById('fmSrc').innerHTML =
+    `<span style="color:var(--green);font-weight:600">✓ LIVE FEMS RAWS DATA</span><br>` +
+    `<span style="color:var(--amber)">${data.stationName}</span> · Station ${FEMS_STATION} · ${data.obsDate}`;
+
+  updateFMBars();
+}
+
+function useFMEstimate(){
+  DIAG.warn('FM-EST','Calculating EMC equilibrium estimate from NWS obs');
+  const {rh,temp,precip}=wx;
+  if(rh==null||temp==null){DIAG.err('FM-EST','No wx data for EMC calc');return;}
+  let emc;
+  if(rh<10) emc=0.03229+0.281073*rh-0.000578*temp*rh;
+  else if(rh<50) emc=2.22749+0.160107*rh-0.014784*temp;
+  else emc=21.0606+0.005565*rh*rh-0.00035*rh*temp-0.483199*rh;
+  emc=Math.max(2,Math.min(35,emc));
+  const wet=Math.min((precip||0)*8,15);
+  fm={fm1:+((emc+wet*.9).toFixed(1)),fm10:+((emc*1.15+wet*.7).toFixed(1)),
+      fm100:+((emc*1.35+wet*.5).toFixed(1)),fm1000:+((emc*1.6+wet*.3).toFixed(1)),
+      erc:null,bi:null,kbdi:null};
+  DIAG.ok('FM-EST',`EMC estimate: 1hr=${fm.fm1}% 10hr=${fm.fm10}% 100hr=${fm.fm100}% 1000hr=${fm.fm1000}%`);
+  document.getElementById('fmSrc').innerHTML=
+    `<span style="color:var(--amber)">⚠ FEMS unavailable — EMC equilibrium estimate from NWS obs.</span><br>`+
+    `<span style="color:var(--muted2)">Verify with RAWS or KDF field reading before any ops decision.</span>`;
+  updateFMBars();
+}
+
+function showAlerts(data){
+  if(!data) return;
+  const box=document.getElementById('alertBox');
+  if(!data.count){box.style.display='none';DIAG.info('NWS-ALRT','No active alerts');return;}
+  DIAG.ok('NWS-ALRT',`${data.count} active alert(s)`);
+  box.style.display='block';
+  box.innerHTML=(data.alerts||[]).slice(0,3).map(a=>`<div class="aitem ${a.isFire?'crit':''}"><div class="ahead">🚨 ${a.event}</div>${(a.headline||'').substring(0,150)}</div>`).join('');
+}
+
+// ═══════════════════════════════════════════════════════
+// FORECAST — via Worker
+// ═══════════════════════════════════════════════════════
+async function fetchForecast(){
+  setSplash('FETCHING 5-DAY FORECAST...', 60);
+  const data = await workerFetch('/forecast', 'FCST');
+  if(!data || !data.days) {
+    document.getElementById('fcastTrend').textContent = 'Forecast unavailable.';
+    return;
+  }
+
+  const days = data.days;
+  const dow = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+  // Color helpers using crew thresholds
+  const c_rh  = v => v == null ? 'var(--muted)' : v < 35 ? 'var(--red)' : v < 50 ? 'var(--yellow)' : 'var(--green)';
+  const c_wind = v => v == null ? 'var(--muted)' : v > 25 ? 'var(--red)' : v > 15 ? 'var(--yellow)' : 'var(--text)';
+  const top_color = d => {
+    if(d.rh != null && d.rh < 35) return 'var(--red)';
+    if(d.wind != null && d.wind > 25) return 'var(--red)';
+    if(d.rh != null && d.rh < 50) return 'var(--yellow)';
+    if(d.wind != null && d.wind > 15) return 'var(--yellow)';
+    return 'var(--green)';
+  };
+
+  const grid = document.getElementById('fcastGrid');
+  grid.innerHTML = days.map(d => {
+    const date = new Date(d.date + 'T12:00:00');
+    const dayName = dow[date.getDay()];
+    const dateStr = (date.getMonth()+1) + '/' + date.getDate();
+    const tc = top_color(d);
+    return `
+      <div class="fcastday" style="--fc-top:${tc}">
+        <div class="fcastdate">${dateStr}</div>
+        <div class="fcastdow">${dayName}</div>
+        <div class="fcastrow">
+          <span class="fcastlbl">RH</span>
+          <div><span class="fcastval" style="color:${c_rh(d.rh)}">${d.rh ?? '—'}</span><span class="fcastunit">%</span></div>
+        </div>
+        <div class="fcastrow">
+          <span class="fcastlbl">Wind</span>
+          <div><span class="fcastval" style="color:${c_wind(d.wind)}">${d.wind ?? '—'}</span><span class="fcastunit">mph ${d.windDir||''}</span></div>
+        </div>
+        <div class="fcastrow">
+          <span class="fcastlbl">Precip</span>
+          <div><span class="fcastval" style="color:var(--text)">${d.precip ?? '—'}</span><span class="fcastunit">%</span></div>
+        </div>
+        <div class="fcastshort">${d.shortFcast || ''}</div>
+      </div>`;
+  }).join('');
+
+  const trendEl = document.getElementById('fcastTrend');
+  trendEl.innerHTML = `<span>TREND ANALYSIS:</span> ${data.trend}`;
+}
+
+// ═══════════════════════════════════════════════════════
+// FIRE MAP — NIFC IRWIN + NASA FIRMS via proxy
+// ═══════════════════════════════════════════════════════
+function initLeafletMap(){
+  DIAG.info('MAP','Initializing Leaflet map');
+  kyMap=L.map('kyMapDiv',{center:[37.5,-84.5],zoom:7});
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_matter/{z}/{x}/{y}{r}.png',{
+    attribution:'&copy;CartoDB&copy;OSM',subdomains:'abcd',maxZoom:19
+  }).addTo(kyMap);
+
+  // EKY ops area outline
+  L.rectangle([[36.8,-85.1],[38.1,-82.2]],{
+    color:'rgba(255,69,0,.45)',weight:1.5,fillColor:'rgba(255,69,0,.035)',
+    fillOpacity:1,dashArray:'6,4'
+  }).addTo(kyMap).bindPopup('<b style="font-family:monospace">EAST KY OPS AREA</b>');
+
+  // London KY
+  const gIcon=L.divIcon({html:`<div style="width:12px;height:12px;border-radius:50%;background:rgba(0,229,160,.4);border:2px solid #00e5a0;box-shadow:0 0 12px rgba(0,229,160,.6)"></div>`,className:'',iconAnchor:[6,6]});
+  L.marker([LAT,LON],{icon:gIcon}).addTo(kyMap)
+   .bindPopup('<b style="font-family:monospace;color:#00e5a0">London, KY (Base)</b><br><span style="font-family:monospace;font-size:11px">Laurel County · 37.129°N 84.083°W</span>');
+
+  // RAWS marker
+  const rIcon=L.divIcon({html:`<div style="width:10px;height:10px;border-radius:50%;background:#ffab00;border:2px solid #ff4500;box-shadow:0 0 8px rgba(255,171,0,.7)"></div>`,className:'',iconAnchor:[5,5]});
+  L.marker([37.20,-84.10],{icon:rIcon}).addTo(kyMap)
+   .bindPopup(`<b style="font-family:monospace;color:#ffab00">FEMS RAWS #${FEMS_STATION}</b><br><span style="font-family:monospace;font-size:11px">Daniel Boone NF area · Fuel moisture source</span>`);
+
+  DIAG.ok('MAP','Leaflet initialized, loading fire data');
+  loadFireData();
+}
+
+async function loadFireData(){
+  document.getElementById('mapStatus').textContent='Loading fire incident data from Worker...';
+  let fires=0;
+
+  // ── NIFC IRWIN via Worker ──
+  const irwinData = await workerFetch('/fires', 'MAP-IRWIN');
+  if(irwinData?.features?.length >= 0){
+    DIAG.ok('MAP-IRWIN',`${irwinData.count} IRWIN incidents`);
+    const icon=L.divIcon({html:`<div style="width:14px;height:14px;border-radius:50%;background:#ff2020;border:2px solid #cc0000;box-shadow:0 0 10px rgba(255,32,32,.8)"></div>`,className:'',iconAnchor:[7,7]});
+    L.geoJSON({type:'FeatureCollection',features:irwinData.features},{
+      pointToLayer:(_,ll)=>L.marker(ll,{icon}),
+      onEachFeature:(f,layer)=>{
+        const p=f.properties;
+        layer.bindPopup(`<div style="font-family:monospace;font-size:11px;line-height:1.6"><b style="color:#ff2020">🔥 ${p.IncidentName||'Unnamed'}</b><br>Type: ${p.IncidentTypeCategory||'—'}<br>Size: ${p.IncidentSize?p.IncidentSize.toLocaleString()+' ac':'unknown'}<br>Contained: ${p.PercentContained!=null?p.PercentContained+'%':'unknown'}<br>County: ${p.POOCounty||'—'}</div>`);
+        fires++;
+      }
+    }).addTo(kyMap);
+  }
+
+  // ── NASA FIRMS via Worker ──
+ const firmsData = await workerFetch('/firms', 'MAP-FIRMS');
+  if(firmsData?.features?.length >= 0){
+    DIAG.ok('MAP-FIRMS',`${firmsData.count} VIIRS thermal detections`);
+    L.geoJSON({type:'FeatureCollection',features:firmsData.features},{
+      pointToLayer:(f,ll)=>{
+        const frp=f.properties.frp||0;
+        const sz=Math.min(18,8+frp/8);
+        const icon=L.divIcon({html:`<div style="width:${sz}px;height:${sz}px;border-radius:50%;background:rgba(255,140,0,.85);border:1px solid #ffaa00;box-shadow:0 0 ${sz}px rgba(255,140,0,.7)"></div>`,className:'',iconAnchor:[sz/2,sz/2]});
+        return L.marker(ll,{icon});
+      },
+      onEachFeature:(f,layer)=>{
+        const p=f.properties;
+        const date=p.acq_date?new Date(p.acq_date).toLocaleDateString():'—';
+        layer.bindPopup(`<div style="font-family:monospace;font-size:11px;line-height:1.6"><b style="color:#ff8c00">🛰️ VIIRS Thermal Detection</b><br>Brightness: ${p.bright_ti4||'—'} K<br>Fire Power: ${p.frp||'—'} MW<br>Confidence: ${p.confidence||'—'}<br>Date: ${date}</div>`);
+        fires++;
+      }
+    }).addTo(kyMap);
+  }
+
+  document.getElementById('mapStatus').textContent =
+    fires > 0
+      ? `${fires} active detections in Kentucky · Last updated: ${new Date().toLocaleTimeString()}`
+      : `✓ No active fire detections in Kentucky · Last checked: ${new Date().toLocaleTimeString()}`;
+}
+// ═══════════════════════════════════════════════════════
+// UI HELPERS
+// ═══════════════════════════════════════════════════════
+const c_T=v=>v>95?'var(--red)':v>85?'var(--orange)':v>75?'var(--amber)':'var(--text)';
+const c_RH=v=>v<20?'var(--red)':v<30?'var(--orange)':v<40?'var(--yellow)':'var(--green)';
+const c_W=v=>v>30?'var(--red)':v>20?'var(--orange)':v>12?'var(--yellow)':'var(--text)';
+const c_F=v=>v==null?'var(--muted)':v>70?'var(--red)':v>40?'var(--orange)':'var(--green)';
+const d2c=d=>{if(d==null)return'—';return['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'][Math.round(d/22.5)%16]};
+
+function setV(id,val,fn){
+  const el=document.getElementById(id); if(!el)return;
+  el.textContent=val!=null?val:'—';
+  if(fn&&val!=null)el.style.color=fn(val);
+}
+
+function updateWxCards(){
+  setV('wTemp',wx.temp,c_T);
+  document.getElementById('wTempSub').textContent=wx.temp!=null?`${((wx.temp-32)*5/9).toFixed(1)}°C`:'—';
+  setV('wRH',wx.rh,c_RH);
+  document.getElementById('wRHSub').textContent=wx.rh!=null?(wx.rh<25?'⚠ CRITICALLY LOW':wx.rh<35?'LOW':wx.rh<60?'Moderate':'High'):'—';
+  setV('wWind',wx.wind,c_W);
+  document.getElementById('wWindDir').textContent=wx.windDirDeg!=null?`FROM ${d2c(wx.windDirDeg)}`:'—';
+  setV('wGust',wx.gust!=null?wx.gust:'N/A',v=>v==='N/A'?'var(--muted)':c_W(v));
+  setV('wDew',wx.dew,()=>'#00b894');
+  document.getElementById('wDewSub').textContent=wx.dew!=null?(wx.dew>50?'Humid':wx.dew>35?'Moderate':'Dry'):'—';
+  setV('wPrecip',wx.precip!=null?wx.precip.toFixed(2):'0.00',()=>'#74b9ff');
+  recalc();
+}
+
+function updateFMBars(){
+  [{b:'fm1b',v:'fm1v',val:fm.fm1,max:30},{b:'fm10b',v:'fm10v',val:fm.fm10,max:35},
+   {b:'fm100b',v:'fm100v',val:fm.fm100,max:40},{b:'fm1000b',v:'fm1000v',val:fm.fm1000,max:50}
+  ].forEach(({b,v,val,max})=>{
+    const pct=val!=null?Math.min(100,val/max*100):0;
+    const c=val==null?'var(--muted2)':val<8?'var(--red)':val<12?'var(--orange)':val<18?'var(--yellow)':'var(--green)';
+    const bar=document.getElementById(b); if(bar){bar.style.width=pct+'%';bar.style.background=c}
+    const vel=document.getElementById(v); if(vel){vel.textContent=val!=null?val.toFixed(1)+'%':'—';vel.style.color=c}
+  });
+  // RAWS-sourced NFDRS values
+  if(fm.erc!=null){document.getElementById('fmERC').textContent=fm.erc.toFixed(0);document.getElementById('fmERC').style.color=c_F(fm.erc)}
+  if(fm.bi!=null){document.getElementById('fmBI').textContent=fm.bi.toFixed(0);document.getElementById('fmBI').style.color=c_F(fm.bi)}
+  if(fm.kbdi!=null){document.getElementById('fmKBDI').textContent=fm.kbdi.toFixed(0);document.getElementById('fmKBDI').style.color=fm.kbdi>400?'var(--red)':fm.kbdi>200?'var(--orange)':'var(--green)'}
+  recalc();
+}
+
+function autoWindDir(deg){
+  const dirs=[0,45,90,135,180,225,270,315];
+  let best=90,min=999;
+  dirs.forEach(d=>{const diff=Math.abs(((deg-d+540)%360)-180);if(diff<min){min=diff;best=d}});
+  windDeg=best;
+  document.querySelectorAll('#dbtns .dbtn').forEach((b,i)=>b.classList.toggle('act',dirs[i]===best));
+}
+
+// ═══════════════════════════════════════════════════════
+// FIRE MATH
+// ═══════════════════════════════════════════════════════
+function calcFWI(t,rh,w){
+  if(t==null||rh==null||w==null)return null;
+  const mc=Math.max(2,10*Math.exp((rh-100)/10)+0.5*(t-60)*0.05);
+  const eta=Math.max(0,Math.min(1,1-2*(mc/30)+1.5*(mc/30)**2-0.5*(mc/30)**3));
+  return Math.round(eta*Math.sqrt(1+w*w)/0.3002);
+}
+function getRating(f){
+  if(f==null)return{lbl:'—',c:'var(--muted)',pct:0,lvl:-1,summary:'Awaiting live weather data...'};
+  if(f<20) return{lbl:'LOW',c:'var(--green)',pct:f/20*20,lvl:0,summary:'Low fire danger. Fuels relatively moist. Normal crew protocols in effect.'};
+  if(f<40) return{lbl:'MODERATE',c:'var(--yellow)',pct:20+(f-20)/20*20,lvl:1,summary:'Moderate danger. Unattended fires may escape. Identify escape routes and safety zones.'};
+  if(f<60) return{lbl:'HIGH',c:'var(--orange)',pct:40+(f-40)/20*20,lvl:2,summary:'High danger. Fires start easily, spread quickly on slopes and ridges. LCES required.'};
+  if(f<80) return{lbl:'VERY HIGH',c:'var(--red)',pct:60+(f-60)/20*20,lvl:3,summary:'Very high danger. Rapid spread, spotting likely. Crew safety is priority — no fire is worth a life.'};
+  return{lbl:'EXTREME',c:'var(--extreme)',pct:Math.min(100,80+(f-80)/20*20),lvl:4,summary:'EXTREME — Near/at Red Flag criteria. All fires potentially uncontrollable. Review LCES with full crew before any engagement.'};
+}
+
+function recalc(){
+  const f=calcFWI(wx.temp,wx.rh,wx.wind);
+  const r=getRating(f);
+  const rEl=document.getElementById('dRating');
+  rEl.textContent=r.lbl; rEl.style.color=r.c;
+  document.getElementById('dFWI').textContent=`FWI: ${f??'—'}`;
+  document.getElementById('dSummary').textContent=r.summary;
+  document.getElementById('dBar').style.cssText=`width:${Math.max(1,r.pct)}%;background:${r.c}`;
+  ['dl0','dl1','dl2','dl3','dl4'].forEach((id,i)=>document.getElementById(id).classList.toggle('act',i===r.lvl));
+
+  const ip=wx.temp&&wx.rh&&fm.fm1?Math.round(Math.max(0,Math.min(100,100*(1-fm.fm1/30)*(1+(wx.temp-60)/120)*(1-wx.rh/100)))):null;
+  const si=wx.wind&&fm.fm1?Math.round(Math.max(0,wx.wind*(1-fm.fm1/30)*1.2)):null;
+  const erc=fm.erc??(wx.temp&&fm.fm10&&fm.fm100?Math.round(Math.max(0,100*(1-fm.fm10/40)*(1-fm.fm100/50)*(1+(wx.temp-60)/120))):null);
+  const bi=fm.bi??null;
+
+  const setFact=(cid,vid,val,disp)=>{
+    const c=c_F(val);
+    const card=document.getElementById(cid); if(card)card.style.setProperty('--fc',c);
+    const vel=document.getElementById(vid); if(vel){vel.textContent=disp??'—';vel.style.color=c}
+  };
+  setFact('fc0','fv0',ip,ip!=null?ip+'%':null);
+  setFact('fc1','fv1',si,si);
+  setFact('fc2','fv2',erc,erc);
+  setFact('fc3','fv3',bi,bi);
+}
+
+// ═══════════════════════════════════════════════════════
+// SPLASH HELPERS
+// ═══════════════════════════════════════════════════════
+function setSplash(msg,pct){
+  const el=document.getElementById('spMsg'); if(el)el.textContent=msg;
+  const bar=document.getElementById('spFill'); if(bar&&pct!=null)bar.style.width=pct+'%';
+}
+function dismissSplash(){
+  setSplash('COMPLETE',100);
+  setTimeout(()=>{
+    const el=document.getElementById('splash');
+    if(el){el.classList.add('out');setTimeout(()=>{if(el)el.style.display='none'},600)}
+  },400);
+}
+
+// ═══════════════════════════════════════════════════════
+// MAIN LOAD
+// ═══════════════════════════════════════════════════════
+async function loadAll(){
+  const btn=document.getElementById('refBtn');
+  if(btn)btn.classList.add('spin');
+  DIAG.info('MAIN',`Load started at ${new Date().toISOString()}`);
+  DIAG.info('MAIN',`User agent: ${navigator.userAgent.substring(0,80)}`);
+
+  setSplash('FETCHING NWS WEATHER...',10);
+  await fetchNWS();
+
+  setSplash('FETCHING FEMS RAWS DATA...',40);
+  await fetchFEMS();
+
+  setSplash('FETCHING 5-DAY FORECAST...',60);
+  await fetchForecast();
+
+  setSplash('LOADING FIRE MAP...',80);
+  if(kyMap) await loadFireData();
+
+  recalc();
+  DIAG.info('MAIN','Load complete');
+  if(btn)btn.classList.remove('spin');
+  dismissSplash();
+}
+
+window.addEventListener('DOMContentLoaded',()=>{
+  DIAG.info('INIT','Dashboard loaded, initializing Leaflet map');
+  setSplash('INITIALIZING...',5);
+  initLeafletMap();
+  loadAll();
+  setInterval(loadAll, 10*60*1000); // auto-refresh 10min
+});
+</script>
+</body>
+</html>
