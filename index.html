@@ -210,7 +210,7 @@ main{position:relative;z-index:1;padding:16px 24px 24px;
 
 /* ── MAP SECTION ── */
 .kymap-section{grid-column:1/-1;background:var(--s1);border:1px solid var(--border);
-  border-radius:6px;overflow:hidden;animation:fadeUp .45s .26s ease both}
+  border-radius:6px;overflow:visible;animation:fadeUp .45s .26s ease both}
 .maptabs{display:flex;background:var(--s2);border-bottom:1px solid var(--border);
   padding:0 16px;overflow-x:auto}
 .mtab{font-family:var(--mono);font-size:10px;letter-spacing:1.5px;text-transform:uppercase;
@@ -231,7 +231,7 @@ main{position:relative;z-index:1;padding:16px 24px 24px;
 .mpane{display:none}.mpane.act{display:block}
 #kyMapDiv{height:500px;background:#0a0c10}
 .leaflet-container{background:#0a0c10!important}
-.leaflet-tile-pane{filter:brightness(.65) saturate(.5) hue-rotate(190deg)}
+.leaflet-tile-pane{filter:brightness(.85) saturate(.5) hue-rotate(190deg)}
 #mapLegend{position:absolute;bottom:18px;left:18px;z-index:500;
   background:rgba(7,9,11,.92);border:1px solid var(--border2);border-radius:4px;
   padding:10px 13px;font-family:var(--mono);font-size:10px;color:var(--muted)}
@@ -388,8 +388,8 @@ footer{position:relative;z-index:1;margin:0 24px 20px;display:flex;flex-directio
     </div>
     <div class="wxloc">
       <div>
-        <div class="wxlocname">LONDON, KY</div>
-        <div class="wxlocsub">LAUREL CO · 37.129°N 84.083°W · ~1145 FT</div>
+        <div class="wxlocname" id="wxLocName">LONDON, KY</div>
+        <div class="wxlocsub" id="wxLocSub">LAUREL CO · 37.129°N 84.083°W · ~1145 FT</div>
       </div>
     </div>
     <div class="wxgrid">
@@ -428,6 +428,29 @@ footer{position:relative;z-index:1;margin:0 24px 20px;display:flex;flex-directio
     <div id="alertBox"></div>
     <div class="fmsect">
       <div class="fmtitle">DEAD FUEL MOISTURE</div>
+      <div style="padding:8px 17px 4px;border-bottom:1px solid var(--border)">
+  <select id="rawsSelect" onchange="changeStation(this.value)"
+    style="width:100%;background:var(--s2);border:1px solid var(--border2);color:var(--text);
+    font-family:var(--mono);font-size:10px;padding:5px 8px;border-radius:3px;cursor:pointer">
+    <optgroup label="── EASTERN KY ──">
+      <option value="157201">Peabody · USFS · 1473ft</option>
+      <option value="152001">Triangle Mtn · USFS · 1364ft</option>
+      <option value="154801">Big Sandy · S&PF · 1180ft</option>
+      <option value="156001">Jackson Co AP · S&PF · 1388ft</option>
+      <option value="154401">Pilgrim · USFS · 1272ft</option>
+      <option value="157002">Big Swag · USFS · 1400ft</option>
+      <option value="159801">Yellow Creek · NPS · 1090ft</option>
+      <option value="159501">Alpine · S&PF · 853ft</option>
+      <option value="156502">Houchin Meadow · NPS · 774ft</option>
+    </optgroup>
+    <optgroup label="── CENTRAL/WESTERN KY ──">
+      <option value="150703">Crittenden · S&PF · 935ft</option>
+      <option value="151191">Greenville · S&PF · 552ft</option>
+      <option value="55522265">Ft Campbell · DOD · 540ft</option>
+      <option value="159901">KYLBL · USFS · 649ft</option>
+    </optgroup>
+  </select>
+</div>
       <div id="fmSrc" class="fmsrc" style="color:var(--muted);font-style:italic;font-family:var(--mono);font-size:9px">Fetching FEMS RAWS data...</div>
       <div class="fmbars">
         <div class="fmrow"><span class="fmlbl">1-hr</span><div class="fmtrack"><div class="fmfill" id="fm1b"></div></div><span class="fmval" id="fm1v">—</span></div>
@@ -650,8 +673,41 @@ async function workerFetch(endpoint, label) {
 // ═══════════════════════════════════════════════════════
 // STATE
 // ═══════════════════════════════════════════════════════
-const LAT=37.129, LON=-84.083;
-const FEMS_STATION=12120;
+let LAT=37.129, LON=-84.083; // default London KY
+let locationSource = 'default';
+
+function getLocation(){
+  if(!navigator.geolocation) return;
+  navigator.geolocation.getCurrentPosition(
+    async pos => {
+      LAT = pos.coords.latitude;
+      LON = pos.coords.longitude;
+      locationSource = 'gps';
+      DIAG.ok('GEO', `Device location: ${LAT.toFixed(4)}, ${LON.toFixed(4)}`);
+await fetchNWS();
+await fetchForecast();
+    },
+    err => {
+      DIAG.warn('GEO', `Location denied or unavailable — using London KY default`);
+    }
+  );
+}
+const RAWS_STATIONS = [
+  {id:'157201', name:'Peabody',        region:'Eastern KY', agency:'USFS', elev:1473, lat:37.13769, lon:-83.57789},
+  {id:'152001', name:'Triangle Mtn',   region:'Eastern KY', agency:'USFS', elev:1364, lat:38.177,   lon:-83.40681},
+  {id:'154801', name:'Big Sandy',      region:'Eastern KY', agency:'S&PF', elev:1180, lat:37.74883, lon:-82.64122},
+  {id:'156001', name:'Jackson Co AP',  region:'Eastern KY', agency:'S&PF', elev:1388, lat:37.59194, lon:-83.31475},
+  {id:'154401', name:'Pilgrim',        region:'Eastern KY', agency:'USFS', elev:1272, lat:37.43614, lon:-83.96033},
+  {id:'157002', name:'Big Swag',       region:'Eastern KY', agency:'USFS', elev:1400, lat:36.87267, lon:-84.42325},
+  {id:'159801', name:'Yellow Creek',   region:'Eastern KY', agency:'NPS',  elev:1090, lat:36.60361, lon:-83.69611},
+  {id:'159501', name:'Alpine',         region:'Eastern KY', agency:'S&PF', elev:853,  lat:36.79556, lon:-85.38028},
+  {id:'156502', name:'Houchin Meadow', region:'Eastern KY', agency:'NPS',  elev:774,  lat:37.13167, lon:-86.14806},
+  {id:'150703', name:'Crittenden',     region:'Central/Western KY', agency:'S&PF', elev:935, lat:38.76917, lon:-84.60194},
+  {id:'151191', name:'Greenville',     region:'Central/Western KY', agency:'S&PF', elev:552, lat:37.2734,  lon:-87.20219},
+  {id:'55522265',name:'Ft Campbell',   region:'Central/Western KY', agency:'DOD',  elev:540, lat:36.71557, lon:-87.73376},
+  {id:'159901', name:'KYLBL',          region:'Central/Western KY', agency:'USFS', elev:649, lat:36.77805, lon:-88.05713},
+];
+let FEMS_STATION = '157201';
 let wx={temp:null,rh:null,wind:null,gust:null,dew:null,precip:null,windDirDeg:null};
 let fm={fm1:null,fm10:null,fm100:null,fm1000:null,erc:null,bi:null,kbdi:null};
 let windDeg=90, kyMap=null;
@@ -688,7 +744,7 @@ async function fetchNWS(){
   setSplash('FETCHING NWS WEATHER DATA...', 15);
   DIAG.info('NWS', `Calling Worker /nws endpoint`);
 
-  const data = await workerFetch('/nws', 'NWS');
+  const data = await workerFetch(`/nws?lat=${LAT}&lon=${LON}`, 'NWS');
   if (!data) { setWxFallback(); return; }
 
   wx = {
@@ -706,6 +762,8 @@ async function fetchNWS(){
   document.getElementById('stName').textContent =
     `${data.station?.name || '—'} (${data.station?.id || '—'})`;
   document.getElementById('hRaws').textContent = data.station?.id || '—';
+  document.getElementById('wxLocName').textContent = data.station?.name || 'UNKNOWN';
+  document.getElementById('wxLocSub').textContent = `${LAT.toFixed(3)}°N ${Math.abs(LON).toFixed(3)}°W`;
 
   const ts = data.timestamp ? new Date(data.timestamp) : null;
   if(ts) document.getElementById('hUpdated').textContent =
@@ -730,11 +788,20 @@ function setWxFallback(){
 // ═══════════════════════════════════════════════════════
 // FEMS RAWS — via Worker
 // ═══════════════════════════════════════════════════════
+async function changeStation(id){
+  FEMS_STATION = id;
+  const station = RAWS_STATIONS.find(s => s.id === id);
+  DIAG.info('RAWS', `Station changed to ${station?.name} (${id})`);
+  fm = {fm1:null,fm10:null,fm100:null,fm1000:null,erc:null,bi:null,kbdi:null};
+  updateFMBars();
+  await fetchFEMS();
+}
+
 async function fetchFEMS(){
   setSplash('FETCHING FEMS RAWS FUEL MOISTURE...', 45);
   DIAG.info('FEMS', `Calling Worker /fems endpoint (station ${FEMS_STATION})`);
 
-  const data = await workerFetch('/fems', 'FEMS');
+  const data = await workerFetch(`/fems?station=${FEMS_STATION}`, 'FEMS');
   if (!data) { useFMEstimate(); return; }
 
   // Log column headers for debugging
@@ -798,7 +865,7 @@ function showAlerts(data){
 // ═══════════════════════════════════════════════════════
 async function fetchForecast(){
   setSplash('FETCHING 5-DAY FORECAST...', 60);
-  const data = await workerFetch('/forecast', 'FCST');
+  const data = await workerFetch(`/forecast?lat=${LAT}&lon=${LON}`, 'FCST');
   if(!data || !data.days) {
     document.getElementById('fcastTrend').textContent = 'Forecast unavailable.';
     return;
@@ -854,8 +921,10 @@ async function fetchForecast(){
 function initLeafletMap(){
   DIAG.info('MAP','Initializing Leaflet map');
   kyMap=L.map('kyMapDiv',{center:[37.5,-84.5],zoom:7});
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_matter/{z}/{x}/{y}{r}.png',{
-    attribution:'&copy;CartoDB&copy;OSM',subdomains:'abcd',maxZoom:19
+  setTimeout(() => kyMap.invalidateSize(), 500);
+  L.tileLayer('https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png',{
+    attribution:'&copy; Stadia Maps',
+    maxZoom:20
   }).addTo(kyMap);
 
   // EKY ops area outline
@@ -1038,6 +1107,7 @@ function dismissSplash(){
 // MAIN LOAD
 // ═══════════════════════════════════════════════════════
 async function loadAll(){
+  getLocation();
   const btn=document.getElementById('refBtn');
   if(btn)btn.classList.add('spin');
   DIAG.info('MAIN',`Load started at ${new Date().toISOString()}`);
