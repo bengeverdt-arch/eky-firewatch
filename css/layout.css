@@ -1,0 +1,65 @@
+/* ── SPLASH ── */
+#splash{position:fixed;inset:0;z-index:999;background:var(--bg);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;
+  transition:opacity .5s}
+#splash.out{opacity:0;pointer-events:none}
+.sp-title{font-family:var(--cond);font-size:38px;font-weight:800;letter-spacing:6px;
+  color:var(--accent);text-shadow:0 0 28px var(--aglow)}
+.sp-bar{width:260px;height:3px;background:var(--border2);border-radius:2px;overflow:hidden}
+.sp-fill{height:100%;background:var(--accent);border-radius:2px;width:0;transition:width .3s}
+#spMsg{font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:2px}
+
+/* ── HEADER ── */
+header{position:sticky;top:0;z-index:200;display:flex;align-items:center;
+  justify-content:space-between;padding:10px 24px;
+  background:rgba(7,9,11,.95);border-bottom:1px solid var(--border2);
+  backdrop-filter:blur(18px)}
+.hlogo{display:flex;align-items:center;gap:11px}
+.hfire{font-size:22px;filter:drop-shadow(0 0 7px var(--accent));
+  animation:flick 3s infinite alternate}
+.hname{font-family:var(--cond);font-size:21px;font-weight:800;letter-spacing:4px;
+  color:var(--accent);text-shadow:0 0 14px var(--aglow);line-height:1}
+.hsub{font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:2px;margin-top:2px}
+.hmeta{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.hbadge{display:flex;align-items:center;gap:6px;background:var(--s2);
+  border:1px solid var(--border2);border-radius:3px;padding:4px 11px}
+.hblbl{font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:1.5px}
+.hbval{font-family:var(--mono);font-size:11px;color:var(--text);letter-spacing:.8px}
+.livepill{display:flex;align-items:center;gap:5px;
+  background:rgba(0,229,160,.07);border:1px solid rgba(0,229,160,.2);
+  border-radius:14px;padding:4px 11px;
+  font-family:var(--mono);font-size:10px;color:var(--green);letter-spacing:1px}
+.ldot{width:6px;height:6px;border-radius:50%;background:var(--green);
+  box-shadow:0 0 7px var(--green);animation:blink 1.5s infinite}
+.hclock{font-family:var(--mono);font-size:11px;color:var(--muted)}
+.diagbtn{font-family:var(--mono);font-size:10px;color:var(--amber);
+  background:rgba(255,171,0,.07);border:1px solid rgba(255,171,0,.2);
+  border-radius:3px;padding:4px 11px;cursor:pointer;letter-spacing:1px;
+  transition:all .2s}
+.diagbtn:hover{background:rgba(255,171,0,.14);border-color:var(--amber)}
+
+/* ── MAIN ── */
+main{position:relative;z-index:1;padding:16px 24px 24px;
+  display:grid;grid-template-columns:310px 1fr;gap:13px;
+  max-width:1460px;margin:0 auto}
+
+/* ── FOOTER ── */
+footer{position:relative;z-index:1;margin:0 24px 20px;display:flex;flex-direction:column;gap:6px}
+.disc{background:rgba(255,171,0,.04);border:1px solid rgba(255,171,0,.12);
+  border-radius:4px;padding:8px 13px;font-family:var(--mono);font-size:10px;
+  color:rgba(255,171,0,.6);letter-spacing:.3px;line-height:1.6}
+.fbar{display:flex;align-items:center;justify-content:space-between;
+  padding:8px 13px;background:var(--s1);border:1px solid var(--border);border-radius:4px;
+  font-family:var(--mono);font-size:10px;color:var(--muted);flex-wrap:wrap;gap:5px}
+.fbar a{color:var(--amber);text-decoration:none}
+.fbar a:hover{text-decoration:underline}
+
+/* ── RESPONSIVE ── */
+@media(max-width:880px){
+  main{grid-template-columns:1fr;padding:12px}
+  .wxp,.dangp,.fcastp{grid-column:1;grid-row:auto}
+  .kymap-section{grid-column:1}
+  .fcastgrid{grid-template-columns:repeat(2,1fr)}
+  header{padding:8px 14px;flex-wrap:wrap;gap:6px}
+  footer{margin:0 12px 18px}
+}

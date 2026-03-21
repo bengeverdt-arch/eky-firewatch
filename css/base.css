@@ -1,0 +1,26 @@
+:root {
+  --bg:#07090b; --s1:#0d1018; --s2:#121620; --s3:#181d28;
+  --border:#1d2230; --border2:#252c3c;
+  --accent:#ff4500; --aglow:rgba(255,69,0,.2);
+  --amber:#ffab00; --green:#00e5a0; --yellow:#ffe600;
+  --orange:#ff7700; --red:#ff2020; --extreme:#cc00ff;
+  --text:#dde4f0; --muted:#56607a; --muted2:#353d54;
+  --mono:'Share Tech Mono',monospace;
+  --cond:'Barlow Condensed',sans-serif;
+  --body:'Barlow',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--body);min-height:100vh}
+body::after{content:'';position:fixed;inset:0;
+  background-image:linear-gradient(rgba(255,69,0,.015) 1px,transparent 1px),
+                   linear-gradient(90deg,rgba(255,69,0,.015) 1px,transparent 1px);
+  background-size:40px 40px;pointer-events:none;z-index:0}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes flick{0%,100%{opacity:1}47%{opacity:.85}50%{opacity:.6}53%{opacity:.85}}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+@keyframes rot{to{transform:rotate(360deg)}}
+
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
