@@ -10,6 +10,7 @@
  *  GET /alerts?lat=&lon=   → Active NWS fire weather alerts
  *  GET /fires              → Active fire incidents (NIFC IRWIN)
  *  GET /firms              → NASA FIRMS VIIRS thermal hotspots
+ *  GET /perimeters         → Fire perimeters year-to-date (NIFC WFIGS)
  *  GET /fire-brief         → NWS FWF text product (Louisville/LMK office)
  *  GET /health             → Health check
  */
@@ -79,6 +80,7 @@ const CACHE_TTL = {
   '/alerts':     300,   // 5 min
   '/fires':      600,   // 10 min
   '/firms':      600,   // 10 min
+  '/perimeters': 1800,  // 30 min — perimeters change slowly
   '/fire-brief': 1800,  // 30 min
 };
 
@@ -111,12 +113,13 @@ export default {
         case '/alerts':     response = await handleAlerts(url);     break;
         case '/fires':      response = await handleFires();         break;
         case '/firms':      response = await handleFIRMS();         break;
+        case '/perimeters': response = await handlePerimeters();    break;
         case '/fire-brief': response = await handleFireBrief();     break;
         case '/health':     response = json({ ok: true, ts: new Date().toISOString(), version: '2.0' }); break;
         default:
           response = json({
             name: 'EKY Fire Watch API', version: '2.0',
-            endpoints: ['/nws', '/fems', '/forecast', '/alerts', '/fires', '/firms', '/fire-brief', '/health'],
+            endpoints: ['/nws', '/fems', '/forecast', '/alerts', '/fires', '/firms', '/perimeters', '/fire-brief', '/health'],
           });
       }
     } catch (e) {
@@ -481,6 +484,54 @@ async function handleFIRMS() {
     features: geojson.features,
     type:     'FeatureCollection',
     source:   'NASA FIRMS VIIRS',
+    fetched:  new Date().toISOString(),
+  });
+}
+
+// ─────────────────────────────────────────────
+// NIFC WFIGS — FIRE PERIMETERS YEAR-TO-DATE
+// Includes all agency perimeters (KDF, USFS, NPS, BLM, etc.)
+// ─────────────────────────────────────────────
+async function handlePerimeters() {
+  // Wider bbox to catch perimeters straddling state borders
+  const bbox = '-89.6,36.4,-81.9,39.2';
+  const url = `https://services3.arcgis.com/T4QMspbfLg3qTGWY/arcgis/rest/services/WFIGS_Interagency_Perimeters_YearToDate/FeatureServer/0/query` +
+    `?where=1%3D1` +
+    `&outFields=poly_IncidentName,poly_GISAcres,attr_CalculatedAcres,attr_UniqueFireIdentifier,attr_POOState,attr_IncidentTypeCategory,attr_PercentContained,attr_FireDiscoveryDateTime` +
+    `&geometry=${bbox}` +
+    `&geometryType=esriGeometryEnvelope` +
+    `&spatialRel=esriSpatialRelIntersects` +
+    `&outSR=4326` +
+    `&f=geojson`;
+
+  const res = await fetch(url);
+  if (!res.ok) return err('WFIGS perimeters fetch failed', `HTTP ${res.status}`);
+  const geojson = await res.json();
+  if (!geojson?.features) return err('WFIGS returned invalid GeoJSON');
+
+  // Normalize fields — WFIGS field names are inconsistent across products
+  const features = geojson.features.map(f => {
+    const p = f.properties;
+    const acres = p.poly_GISAcres ?? p.attr_CalculatedAcres ?? null;
+    return {
+      ...f,
+      properties: {
+        name:       p.poly_IncidentName || 'Unnamed Fire',
+        acres:      acres != null ? Math.round(acres) : null,
+        state:      p.attr_POOState || '—',
+        type:       p.attr_IncidentTypeCategory || '—',
+        contained:  p.attr_PercentContained ?? null,
+        discovered: p.attr_FireDiscoveryDateTime || null,
+        uid:        p.attr_UniqueFireIdentifier || null,
+      },
+    };
+  });
+
+  return json({
+    count:    features.length,
+    features,
+    type:     'FeatureCollection',
+    source:   'NIFC WFIGS Year-to-Date Perimeters',
     fetched:  new Date().toISOString(),
   });
 }

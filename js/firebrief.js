@@ -2,50 +2,63 @@
 import { workerFetch } from './api.js';
 import { DIAG } from './diag.js';
 
+export function openBrief()  { document.getElementById('briefPanel').classList.remove('hidden'); }
+export function closeBrief() { document.getElementById('briefPanel').classList.add('hidden'); }
+
 export async function fetchFireBrief() {
   DIAG.info('FWF', 'Fetching NWS Fire Weather Forecast text from LMK office');
 
   const data = await workerFetch('/fire-brief', 'FWF');
-  const meta = document.getElementById('briefMeta');
-  const textEl = document.getElementById('briefText');
-  const badgeEl = document.getElementById('briefBadge');
+  const metaEl  = document.getElementById('briefMeta');
+  const textEl  = document.getElementById('briefText');
   const alertEl = document.getElementById('briefAlert');
+  const btn     = document.getElementById('briefBtn');
+  const box     = document.querySelector('.briefbox');
 
   if (!data || !data.text) {
     DIAG.warn('FWF', 'No fire brief available');
+    if (metaEl) metaEl.textContent = 'LMK · Unavailable';
     if (textEl) textEl.textContent = 'Fire weather brief unavailable. Check NWS Louisville directly.';
-    if (badgeEl) badgeEl.textContent = 'LMK · UNAVAILABLE';
     return;
   }
 
   DIAG.ok('FWF', `Loaded FWF product ${data.productId}, issued ${data.issuedAt}`);
 
-  if (badgeEl) {
+  if (metaEl) {
     const ts = data.issuedAt ? new Date(data.issuedAt) : null;
     const tsStr = ts
-      ? ts.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+      ? ts.toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
       : '—';
-    badgeEl.textContent = `${data.office || 'LMK'} · ${tsStr}`;
+    metaEl.textContent = `${data.office || 'LMK'} · Issued ${tsStr}`;
   }
 
-  if (meta) {
-    const ts = data.issuedAt ? new Date(data.issuedAt) : null;
-    meta.innerHTML =
-      `<span class="brief-office">${data.office || 'KLMK'}</span>` +
-      (ts ? `<span class="brief-issued">Issued ${ts.toLocaleString('en-US',{weekday:'short',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})}</span>` : '');
-  }
-
-  // Highlight RED FLAG or CRITICAL conditions
+  // Detect RED FLAG / CRITICAL language
   const upper = (data.text || '').toUpperCase();
+  const isRedFlag = /RED FLAG WARNING|FIRE WEATHER WATCH|CRITICAL FIRE/.test(upper);
+
   if (alertEl) {
-    if (/RED FLAG WARNING|FIRE WEATHER WATCH|CRITICAL/.test(upper)) {
-      alertEl.textContent = '⚠ RED FLAG / CRITICAL CONDITIONS IN EFFECT';
+    if (isRedFlag) {
+      alertEl.textContent = '⚠ RED FLAG / CRITICAL CONDITIONS — See full brief for details';
       alertEl.classList.add('show');
       DIAG.warn('FWF', 'RED FLAG or CRITICAL language detected in FWF product');
     } else {
       alertEl.classList.remove('show');
     }
   }
+
+  // Update header button — pulses red when RED FLAG is active
+  if (btn) {
+    if (isRedFlag) {
+      btn.classList.add('redflag');
+      btn.textContent = '⚠ FIRE BRIEF';
+    } else {
+      btn.classList.remove('redflag');
+      btn.textContent = '📋 FIRE BRIEF';
+    }
+  }
+
+  // Update modal border
+  if (box) box.classList.toggle('redflag', isRedFlag);
 
   if (textEl) {
     // Strip teletype header lines, keep readable content

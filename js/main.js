@@ -7,7 +7,7 @@ import { fetchForecast } from './forecast.js';
 import { initLeafletMap, loadFireData, toggleMapLayer } from './map.js';
 import { getLocation } from './geo.js';
 import { recalc } from './calc.js';
-import { fetchFireBrief } from './firebrief.js';
+import { fetchFireBrief, openBrief, closeBrief } from './firebrief.js';
 
 // ── Clock ──
 function tick() {
@@ -72,3 +72,5 @@ window.copyLog        = copyLog;
 window.setWD          = setWD;
 window.changeStation  = changeStation;
 window.toggleMapLayer = toggleMapLayer;
+window.openBrief      = openBrief;
+window.closeBrief     = closeBrief;

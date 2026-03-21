@@ -22,6 +22,23 @@
   <div id="spMsg">INITIALIZING...</div>
 </div>
 
+<!-- FIRE BRIEF PANEL -->
+<div id="briefPanel" class="hidden">
+  <div class="briefbox">
+    <div class="briefhead">
+      <div>
+        <span class="brieftitle">NWS FIRE WEATHER BRIEF</span>
+        <span class="brief-meta-line" id="briefMeta">LMK · Loading...</span>
+      </div>
+      <button class="diagclose" onclick="closeBrief()">✕ CLOSE</button>
+    </div>
+    <div class="briefbody">
+      <div class="brief-alert-banner" id="briefAlert"></div>
+      <div class="brief-text" id="briefText">Loading fire weather brief from NWS Louisville (LMK)...</div>
+    </div>
+  </div>
+</div>
+
 <!-- DIAGNOSTICS PANEL -->
 <div id="diagPanel" class="hidden">
   <div class="diagbox">
@@ -52,6 +69,7 @@
     <div class="hbadge"><span class="hblbl">RAWS</span><span class="hbval" id="hRaws">—</span></div>
     <div class="hbadge"><span class="hblbl">UPDATED</span><span class="hbval" id="hUpdated">—</span></div>
     <div class="livepill"><div class="ldot"></div><span>NWS + FEMS</span></div>
+    <button class="briefbtn" id="briefBtn" onclick="openBrief()">📋 FIRE BRIEF</button>
     <button class="diagbtn" onclick="openDiag()">🔧 DIAGNOSTICS</button>
     <div class="hclock" id="clk"></div>
   </div>
@@ -195,21 +213,6 @@
     </div>
   </div>
 
-  <!-- NWS FIRE WEATHER BRIEF PANEL -->
-  <div class="panel briefp">
-    <div class="ph">
-      <span class="ptitle">NWS FIRE WEATHER BRIEF</span>
-      <span class="pbadge" id="briefBadge">LMK · Loading...</span>
-    </div>
-    <div class="brief-meta" id="briefMeta">
-      <span class="brief-office">KLMK</span>
-      <span class="brief-issued">Loading...</span>
-      <span class="brief-alert" id="briefAlert"></span>
-    </div>
-    <div class="brief-text" id="briefText">Loading fire weather brief from NWS Louisville (LMK)...</div>
-    <button class="brief-toggle" onclick="this.previousElementSibling.style.maxHeight=this.previousElementSibling.style.maxHeight==='none'?'320px':'none';this.textContent=this.textContent.includes('▼')?'▲ COLLAPSE':'▼ EXPAND FULL TEXT'">▼ EXPAND FULL TEXT</button>
-  </div>
-
   <!-- MAP SECTION -->
   <div class="kymap-section">
     <div class="ph">
@@ -218,6 +221,7 @@
         <button class="mlayer act" id="lyrRaws"  onclick="toggleMapLayer('raws',this)">⬤ RAWS</button>
         <button class="mlayer act" id="lyrFirms" onclick="toggleMapLayer('firms',this)">⬤ FIRMS</button>
         <button class="mlayer act" id="lyrFires" onclick="toggleMapLayer('fires',this)">⬤ INCIDENTS</button>
+        <button class="mlayer act" id="lyrPerim" onclick="toggleMapLayer('perimeters',this)">⬤ PERIMETERS</button>
       </div>
     </div>
     <div id="mapStatus">Initializing fire map...</div>

@@ -3,10 +3,11 @@ import { state, RAWS_STATIONS } from './state.js';
 import { workerFetch } from './api.js';
 import { DIAG } from './diag.js';
 
-let rawsGroup  = null;
-let firmsGroup = null;
-let irwinGroup = null;
-let userMarker = null;
+let rawsGroup   = null;
+let firmsGroup  = null;
+let irwinGroup  = null;
+let perimGroup  = null;
+let userMarker  = null;
 let rawsMarkers = {}; // id → L.marker
 
 export function initLeafletMap() {
@@ -19,6 +20,7 @@ export function initLeafletMap() {
   }).addTo(state.kyMap);
 
   // Layer groups — each toggleable independently
+  perimGroup = L.layerGroup().addTo(state.kyMap);  // perimeters below everything else
   rawsGroup  = L.layerGroup().addTo(state.kyMap);
   firmsGroup = L.layerGroup().addTo(state.kyMap);
   irwinGroup = L.layerGroup().addTo(state.kyMap);
@@ -122,7 +124,7 @@ export function updateMapRawsSelection(id) {
 
 // ── Layer toggle (called from HTML onclick) ──
 export function toggleMapLayer(name, btn) {
-  const group = name === 'raws' ? rawsGroup : name === 'firms' ? firmsGroup : irwinGroup;
+  const group = name === 'raws' ? rawsGroup : name === 'firms' ? firmsGroup : name === 'fires' ? irwinGroup : perimGroup;
   if (!group || !state.kyMap) return;
   if (state.kyMap.hasLayer(group)) {
     state.kyMap.removeLayer(group);
@@ -140,11 +142,13 @@ export async function loadFireData() {
 
   firmsGroup.clearLayers();
   irwinGroup.clearLayers();
+  perimGroup.clearLayers();
   let fires = 0;
 
-  const [irwinData, firmsData] = await Promise.all([
+  const [irwinData, firmsData, perimData] = await Promise.all([
     workerFetch('/fires', 'MAP-IRWIN'),
     workerFetch('/firms', 'MAP-FIRMS'),
+    workerFetch('/perimeters', 'MAP-PERIM'),
   ]);
 
   if (irwinData?.features?.length >= 0) {
@@ -198,6 +202,44 @@ export async function loadFireData() {
         fires++;
       },
     }).addTo(firmsGroup);
+  }
+
+  if (perimData?.features?.length >= 0) {
+    DIAG.ok('MAP-PERIM', `${perimData.count} fire perimeters`);
+    L.geoJSON({ type: 'FeatureCollection', features: perimData.features }, {
+      style: f => {
+        const acres = f.properties.acres || 0;
+        // Larger fires get more opaque fill
+        const fillOpacity = acres > 10000 ? 0.35 : acres > 1000 ? 0.25 : 0.18;
+        return {
+          color:       '#ff4500',
+          weight:      1.5,
+          opacity:     0.8,
+          fillColor:   '#ff6a00',
+          fillOpacity,
+          dashArray:   '4 3',
+        };
+      },
+      onEachFeature: (f, layer) => {
+        const p = f.properties;
+        const acStr  = p.acres != null ? p.acres.toLocaleString() + ' ac' : 'unknown acres';
+        const contStr = p.contained != null ? `${p.contained}% contained` : 'containment unknown';
+        const discDate = p.discovered
+          ? new Date(p.discovered).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+          : '—';
+        layer.bindPopup(`<div style="font-family:monospace;font-size:11px;line-height:1.6">
+          <b style="color:#ff4500">🔥 ${p.name}</b><br>
+          ${acStr} · ${contStr}<br>
+          State: ${p.state} · Type: ${p.type}<br>
+          Discovered: ${discDate}
+        </div>`);
+        layer.on('mouseover', () => layer.setStyle({ fillOpacity: 0.5, weight: 2.5 }));
+        layer.on('mouseout',  () => layer.setStyle({
+          fillOpacity: (p.acres || 0) > 10000 ? 0.35 : (p.acres || 0) > 1000 ? 0.25 : 0.18,
+          weight: 1.5,
+        }));
+      },
+    }).addTo(perimGroup);
   }
 
   if (statusEl) {
