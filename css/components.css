@@ -188,3 +188,29 @@
 .log-info{color:var(--muted)}
 .log-data{color:#74b9ff}
 .log-head{color:var(--text);font-weight:700}
+
+/* ── WX SOURCE ATTRIBUTION ── */
+.wcsrc{display:block;font-family:var(--mono);font-size:8px;color:var(--muted2);
+  letter-spacing:.5px;margin-top:2px;min-height:10px}
+
+/* ── FIRE WEATHER BRIEF PANEL ── */
+.briefp{grid-column:1/-1}
+.brief-meta{display:flex;align-items:center;gap:12px;padding:8px 17px;
+  border-bottom:1px solid var(--border);flex-wrap:wrap}
+.brief-issued{font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:1px}
+.brief-office{font-family:var(--mono);font-size:9px;color:var(--amber);letter-spacing:1.5px}
+.brief-alert{display:none;align-items:center;gap:6px;background:rgba(255,32,32,.08);
+  border:1px solid rgba(255,32,32,.3);border-radius:3px;padding:5px 12px;
+  font-family:var(--mono);font-size:10px;color:var(--red);letter-spacing:.8px;font-weight:700;
+  margin-left:auto}
+.brief-alert.show{display:flex}
+.brief-text{font-family:var(--mono);font-size:10px;color:var(--muted);line-height:1.65;
+  padding:12px 17px;max-height:320px;overflow-y:auto;white-space:pre-wrap;word-break:break-word;
+  border-bottom:1px solid var(--border)}
+.brief-text::-webkit-scrollbar{width:4px}
+.brief-text::-webkit-scrollbar-track{background:var(--s2)}
+.brief-text::-webkit-scrollbar-thumb{background:var(--border2)}
+.brief-toggle{width:100%;background:none;border:none;border-top:1px solid var(--border);
+  padding:8px 17px;font-family:var(--mono);font-size:9px;color:var(--muted);cursor:pointer;
+  text-align:left;letter-spacing:1px;transition:color .2s}
+.brief-toggle:hover{color:var(--text)}

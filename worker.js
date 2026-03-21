@@ -1,28 +1,23 @@
 /**
- * EKY Fire Watch — Cloudflare Worker Backend
- * ============================================
- * DEPLOY INSTRUCTIONS:
- *  1. Go to https://dash.cloudflare.com → Workers & Pages → Create Worker
- *  2. Delete all the default code in the editor
- *  3. Paste this entire file
- *  4. Click "Save and Deploy"
- *  5. Copy your Worker URL (looks like: https://eky-fire-watch.YOUR-NAME.workers.dev)
- *  6. Paste that URL into the dashboard HTML where it says WORKER_URL
+ * EKY Fire Watch — Cloudflare Worker Backend  v2.0
+ * =================================================
+ * DEPLOY: Paste into Cloudflare Workers dashboard and Save & Deploy.
  *
- * ENDPOINTS THIS WORKER PROVIDES:
- *  GET /nws    → Live weather observation for London KY (NWS)
- *  GET /fems   → Dead fuel moisture + NFDRS from RAWS station 12120
- *  GET /alerts → Active NWS fire weather alerts for London KY
- *  GET /fires  → Active fire incidents (NIFC IRWIN) for East KY region
- *  GET /firms  → NASA FIRMS VIIRS thermal hotspots for East KY region
- *  GET /health → Simple health check
+ * ENDPOINTS:
+ *  GET /nws?lat=&lon=      → Multi-station composite weather (NWS + METAR fallback)
+ *  GET /fems?station=      → Dead fuel moisture + NFDRS from RAWS
+ *  GET /forecast?lat=&lon= → NWS 5-day fire weather forecast
+ *  GET /alerts?lat=&lon=   → Active NWS fire weather alerts
+ *  GET /fires              → Active fire incidents (NIFC IRWIN)
+ *  GET /firms              → NASA FIRMS VIIRS thermal hotspots
+ *  GET /fire-brief         → NWS FWF text product (Louisville/LMK office)
+ *  GET /health             → Health check
  */
 
-const LAT = 37.129;
-const LON = -84.083;
-const FEMS_STATION = 12120;
+const DEFAULT_LAT = 37.129;
+const DEFAULT_LON = -84.083;
+const NWS_UA = 'EKY-FireWatch/2.0 (cloudflare-worker)';
 
-// CORS headers — allows any webpage to call this Worker
 const CORS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, OPTIONS',
@@ -38,6 +33,46 @@ function err(message, detail = '', status = 500) {
   return json({ error: true, message, detail }, status);
 }
 
+function getCoords(url) {
+  const lat = parseFloat(url.searchParams.get('lat')) || DEFAULT_LAT;
+  const lon = parseFloat(url.searchParams.get('lon')) || DEFAULT_LON;
+  return { lat, lon };
+}
+
+// Haversine distance in miles
+function haverDist(lat1, lon1, lat2, lon2) {
+  const R = 3958.8;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat/2)**2 +
+    Math.cos(lat1 * Math.PI/180) * Math.cos(lat2 * Math.PI/180) * Math.sin(dLon/2)**2;
+  return R * 2 * Math.asin(Math.sqrt(a));
+}
+
+// Unit conversions
+const C2F     = c => c != null ? Math.round(c * 9/5 + 32) : null;
+const mps2mph = m => m != null ? Math.round(m * 2.237) : null;
+const kt2mph  = k => k != null ? Math.round(k * 1.15078) : null;
+const m2in    = m => m != null ? Math.round(m * 39.3701 * 100) / 100 : null;
+
+// Relative humidity from temp + dewpoint (Celsius), Magnus formula
+function rhFromTD(t, td) {
+  if (t == null || td == null) return null;
+  const v = 100 * Math.exp(17.625 * td / (243.04 + td)) / Math.exp(17.625 * t / (243.04 + t));
+  return Math.round(Math.min(100, Math.max(0, v)));
+}
+
+// Cache TTL per endpoint (seconds)
+const CACHE_TTL = {
+  '/nws':        480,   // 8 min
+  '/fems':       480,   // 8 min
+  '/forecast':   1800,  // 30 min
+  '/alerts':     300,   // 5 min
+  '/fires':      600,   // 10 min
+  '/firms':      600,   // 10 min
+  '/fire-brief': 1800,  // 30 min
+};
+
 // ─────────────────────────────────────────────
 // ROUTING
 // ─────────────────────────────────────────────
@@ -45,15 +80,13 @@ export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
 
-    // Handle preflight CORS requests
     if (request.method === 'OPTIONS') {
       return new Response(null, { headers: CORS });
     }
 
-    // Cache layer — reuse responses for 8 minutes to avoid hammering source APIs
-    const cache = caches.default;
+    const cache    = caches.default;
     const cacheKey = new Request(url.toString());
-    const cached = await cache.match(cacheKey);
+    const cached   = await cache.match(cacheKey);
     if (cached) {
       const resp = new Response(cached.body, cached);
       resp.headers.set('X-Cache', 'HIT');
@@ -63,106 +96,196 @@ export default {
     let response;
     try {
       switch (url.pathname) {
-        case '/nws':    response = await handleNWS();    break;
-        case '/fems':   response = await handleFEMS();   break;
-        case '/alerts': response = await handleAlerts(); break;
-        case '/fires':  response = await handleFires();  break;
-        case '/firms':  response = await handleFIRMS();  break;
-        case '/health': response = json({ ok: true, ts: new Date().toISOString() }); break;
+        case '/nws':        response = await handleNWS(url);        break;
+        case '/fems':       response = await handleFEMS(url);       break;
+        case '/forecast':   response = await handleForecast(url);   break;
+        case '/alerts':     response = await handleAlerts(url);     break;
+        case '/fires':      response = await handleFires();         break;
+        case '/firms':      response = await handleFIRMS();         break;
+        case '/fire-brief': response = await handleFireBrief();     break;
+        case '/health':     response = json({ ok: true, ts: new Date().toISOString(), version: '2.0' }); break;
         default:
           response = json({
-            name: 'EKY Fire Watch API',
-            version: '1.0',
-            endpoints: ['/nws', '/fems', '/alerts', '/fires', '/firms', '/health']
+            name: 'EKY Fire Watch API', version: '2.0',
+            endpoints: ['/nws', '/fems', '/forecast', '/alerts', '/fires', '/firms', '/fire-brief', '/health'],
           });
       }
     } catch (e) {
       response = err('Unhandled server error', e.message);
     }
 
-    // Cache successful responses for 8 minutes
     if (response.status === 200) {
+      const ttl     = CACHE_TTL[url.pathname] || 480;
       const toCache = response.clone();
       ctx.waitUntil(
         cache.put(cacheKey, new Response(toCache.body, {
           ...toCache,
-          headers: { ...Object.fromEntries(toCache.headers), 'Cache-Control': 'max-age=480' }
+          headers: { ...Object.fromEntries(toCache.headers), 'Cache-Control': `max-age=${ttl}` },
         }))
       );
     }
 
     response.headers.set('X-Cache', 'MISS');
     return response;
-  }
+  },
 };
 
 // ─────────────────────────────────────────────
-// NWS WEATHER
+// NWS MULTI-STATION COMPOSITE WEATHER
 // ─────────────────────────────────────────────
-async function handleNWS() {
-  // Step 1: find grid + nearest observation station
-  const ptRes = await fetch(`https://api.weather.gov/points/${LAT},${LON}`, {
-    headers: { 'User-Agent': 'EKY-FireWatch/1.0 (cloudflare-worker)' }
-  });
+async function handleNWS(url) {
+  const { lat, lon } = getCoords(url);
+
+  // Step 1: NWS grid → nearest observation stations list
+  const ptRes = await fetch(`https://api.weather.gov/points/${lat},${lon}`,
+    { headers: { 'User-Agent': NWS_UA } });
   if (!ptRes.ok) return err('NWS points lookup failed', `HTTP ${ptRes.status}`);
   const ptData = await ptRes.json();
 
   const stationsUrl = ptData?.properties?.observationStations;
   if (!stationsUrl) return err('No observation stations URL from NWS');
 
-  // Step 2: get nearest station ID
-  const stRes = await fetch(stationsUrl, {
-    headers: { 'User-Agent': 'EKY-FireWatch/1.0 (cloudflare-worker)' }
-  });
+  const stRes = await fetch(stationsUrl, { headers: { 'User-Agent': NWS_UA } });
   if (!stRes.ok) return err('NWS stations list failed', `HTTP ${stRes.status}`);
   const stData = await stRes.json();
 
-  const station = stData?.features?.[0];
-  if (!station) return err('No stations found near London KY');
+  const features = (stData?.features || []).slice(0, 8);
+  if (!features.length) return err('No stations found near location');
 
-  const sid   = station.properties.stationIdentifier;
-  const sname = station.properties.name;
+  // Step 2: Metadata + distance for each station
+  const stationMeta = features.map(f => ({
+    id:     f.properties.stationIdentifier,
+    name:   f.properties.name,
+    lat:    f.geometry?.coordinates?.[1] ?? null,
+    lon:    f.geometry?.coordinates?.[0] ?? null,
+    distMi: f.geometry?.coordinates
+      ? haverDist(lat, lon, f.geometry.coordinates[1], f.geometry.coordinates[0])
+      : 999,
+  }));
 
-  // Step 3: latest observation
-  const obsRes = await fetch(`https://api.weather.gov/stations/${sid}/observations/latest`, {
-    headers: { 'User-Agent': 'EKY-FireWatch/1.0 (cloudflare-worker)' }
-  });
-  if (!obsRes.ok) return err('NWS observations failed', `HTTP ${obsRes.status}`);
-  const obsData = await obsRes.json();
-  const obs = obsData?.properties;
-  if (!obs) return err('No observation properties in NWS response');
+  // Step 3: Fetch all observations in parallel
+  const obsResults = await Promise.allSettled(
+    stationMeta.map(s =>
+      fetch(`https://api.weather.gov/stations/${s.id}/observations/latest`,
+        { headers: { 'User-Agent': NWS_UA } })
+        .then(r => r.ok ? r.json() : null)
+        .then(d => ({ ...s, obs: d?.properties ?? null }))
+        .catch(() => ({ ...s, obs: null }))
+    )
+  );
 
-  // Convert and clean up values
-  const C2F = c => c != null ? Math.round(c * 9 / 5 + 32) : null;
-  const mps2mph = m => m != null ? Math.round(m * 2.237) : null;
-  const m2in = m => m != null ? Math.round(m * 39.3701 * 100) / 100 : null;
+  // Keep only fulfilled results with actual obs, sort by distance
+  const stations = obsResults
+    .filter(r => r.status === 'fulfilled' && r.value.obs != null)
+    .map(r => r.value)
+    .sort((a, b) => a.distMi - b.distMi);
+
+  if (!stations.length) return err('No valid observations returned from NWS stations');
+
+  // Step 4: Per-parameter best value — closest station with non-null reading
+  const extractors = {
+    temp:    obs => C2F(obs?.temperature?.value),
+    rh:      obs => obs?.relativeHumidity?.value != null ? Math.round(obs.relativeHumidity.value) : null,
+    wind:    obs => mps2mph(obs?.windSpeed?.value),
+    gust:    obs => mps2mph(obs?.windGust?.value),
+    dew:     obs => C2F(obs?.dewpoint?.value),
+    precip:  obs => m2in(obs?.precipitationLastHour?.value),
+    windDir: obs => obs?.windDirection?.value ?? null,
+  };
+
+  const composite = {};
+  const sources   = {};
+
+  for (const [param, extract] of Object.entries(extractors)) {
+    for (const s of stations) {
+      const v = extract(s.obs);
+      if (v != null) {
+        composite[param] = v;
+        sources[param]   = {
+          id:     s.id,
+          name:   s.name,
+          distMi: Math.round(s.distMi * 10) / 10,
+          source: 'NWS',
+        };
+        break;
+      }
+    }
+    if (composite[param] == null) composite[param] = null;
+  }
+
+  // Step 5: METAR fallback for any still-null key params
+  const stillMissing = ['temp', 'rh', 'wind'].some(p => composite[p] == null);
+  if (stillMissing) {
+    const ids = stationMeta.slice(0, 5).map(s => s.id).join(',');
+    try {
+      const mRes = await fetch(
+        `https://aviationweather.gov/api/data/metar?ids=${ids}&format=json&hours=3`
+      );
+      if (mRes.ok) {
+        const metars = await mRes.json();
+        const sorted = (Array.isArray(metars) ? metars : [])
+          .map(m => {
+            const mLat = m.lat ?? m.latitude;
+            const mLon = m.lon ?? m.longitude;
+            return { ...m, _dist: (mLat != null && mLon != null) ? haverDist(lat, lon, mLat, mLon) : 999 };
+          })
+          .sort((a, b) => a._dist - b._dist);
+
+        for (const m of sorted) {
+          const vals = {
+            temp:    C2F(m.temp),
+            rh:      rhFromTD(m.temp, m.dewp),
+            wind:    kt2mph(m.wspd),
+            gust:    kt2mph(m.wgst),
+            dew:     C2F(m.dewp),
+            windDir: typeof m.wdir === 'number' ? m.wdir : null,
+          };
+          for (const [param, v] of Object.entries(vals)) {
+            if (composite[param] == null && v != null) {
+              composite[param] = v;
+              sources[param]   = {
+                id:     m.id || m.stationId,
+                name:   m.site || m.name || m.id,
+                distMi: Math.round(m._dist * 10) / 10,
+                source: 'METAR',
+              };
+            }
+          }
+        }
+      }
+    } catch (_) { /* METAR fallback — silent fail, NWS data is primary */ }
+  }
+
+  const primary = sources.temp ?? { id: stations[0].id, name: stations[0].name };
 
   return json({
-    station: { id: sid, name: sname },
-    timestamp: obs.timestamp,
-    temp:    C2F(obs.temperature?.value),
-    rh:      obs.relativeHumidity?.value != null ? Math.round(obs.relativeHumidity.value) : null,
-    wind:    mps2mph(obs.windSpeed?.value),
-    gust:    mps2mph(obs.windGust?.value),
-    windDir: obs.windDirection?.value,
-    dew:     C2F(obs.dewpoint?.value),
-    precip:  m2in(obs.precipitationLastHour?.value),
-    pressure: obs.barometricPressure?.value,
-    visibility: obs.visibility?.value,
-    rawText: obs.rawMessage,
+    station:    { id: primary.id, name: primary.name },
+    timestamp:  stations[0].obs?.timestamp,
+    temp:       composite.temp,
+    rh:         composite.rh,
+    wind:       composite.wind,
+    gust:       composite.gust,
+    windDir:    composite.windDir,
+    dew:        composite.dew,
+    precip:     composite.precip,
+    pressure:   stations[0].obs?.barometricPressure?.value,
+    visibility: stations[0].obs?.visibility?.value,
+    rawText:    stations[0].obs?.rawMessage,
+    sources,   // per-parameter source: {id, name, distMi, source}
   });
 }
 
 // ─────────────────────────────────────────────
 // FEMS RAWS — DEAD FUEL MOISTURE + NFDRS
 // ─────────────────────────────────────────────
-async function handleFEMS() {
-  const now   = new Date();
-  const end   = now.toISOString().slice(0, 10);
-  const start = new Date(now - 5 * 86400000).toISOString().slice(0, 10);
-  const url   = `https://fems.fs2c.usda.gov/api/ext-climatology/download-nfdr-daily-summary/?dataset=observation&startDate=${start}&endDate=${end}&dataFormat=csv&stationIds=${FEMS_STATION}&fuelModels=Y`;
+async function handleFEMS(url) {
+  const station = url.searchParams.get('station') || '157201';
+  const now     = new Date();
+  const end     = now.toISOString().slice(0, 10);
+  const start   = new Date(now - 5 * 86400000).toISOString().slice(0, 10);
+  const apiUrl  = `https://fems.fs2c.usda.gov/api/ext-climatology/download-nfdr-daily-summary/?dataset=observation&startDate=${start}&endDate=${end}&dataFormat=csv&stationIds=${station}&fuelModels=Y`;
 
-  const res = await fetch(url);
+  const res = await fetch(apiUrl);
   if (!res.ok) return err('FEMS fetch failed', `HTTP ${res.status}`);
 
   const csv = await res.text();
@@ -171,42 +294,130 @@ async function handleFEMS() {
   const lines = csv.trim().split('\n').filter(l => l.trim().length > 0);
   if (lines.length < 2) return err('FEMS CSV has no data rows', `Got ${lines.length} lines`);
 
-  // Parse CSV
   const header = lines[0].replace(/"/g, '').split(',').map(h => h.trim());
-  const ci = name => header.findIndex(h => h === name);
-
-  // Use the most recent row (last line)
-  const row = lines[lines.length - 1].replace(/"/g, '').split(',');
-  const getV = name => {
+  const ci     = name => header.findIndex(h => h === name);
+  const row    = lines[lines.length - 1].replace(/"/g, '').split(',');
+  const getV   = name => {
     const i = ci(name);
     return i >= 0 && row[i] && row[i] !== '' ? parseFloat(row[i]) : null;
   };
 
   return json({
     stationName: row[0] || 'Unknown',
-    stationId:   FEMS_STATION,
+    stationId:   station,
     obsDate:     row[1] || '',
-    header:      header, // include so dashboard can debug column names if needed
-    fm1hr:   getV('1HrFM'),
-    fm10hr:  getV('10HrFM'),
-    fm100hr: getV('100HrFM'),
-    fm1000hr:getV('1000HrFM'),
-    erc:     getV('ERC'),
-    bi:      getV('BI'),
-    kbdi:    getV('KBDI'),
-    ic:      getV('IC'),
-    sc:      getV('SC'),
+    header,
+    fm1hr:    getV('1HrFM'),
+    fm10hr:   getV('10HrFM'),
+    fm100hr:  getV('100HrFM'),
+    fm1000hr: getV('1000HrFM'),
+    erc:      getV('ERC'),
+    bi:       getV('BI'),
+    kbdi:     getV('KBDI'),
+    ic:       getV('IC'),
+    sc:       getV('SC'),
     fuelModel: row[ci('FuelModel')] || null,
   });
 }
 
 // ─────────────────────────────────────────────
+// NWS 5-DAY FIRE WEATHER FORECAST
+// ─────────────────────────────────────────────
+async function handleForecast(url) {
+  const { lat, lon } = getCoords(url);
+
+  const ptRes = await fetch(`https://api.weather.gov/points/${lat},${lon}`,
+    { headers: { 'User-Agent': NWS_UA } });
+  if (!ptRes.ok) return err('NWS points failed for forecast', `HTTP ${ptRes.status}`);
+  const ptData = await ptRes.json();
+
+  const fcstUrl = ptData?.properties?.forecast;
+  if (!fcstUrl) return err('No forecast URL from NWS');
+
+  const fcRes = await fetch(fcstUrl, { headers: { 'User-Agent': NWS_UA } });
+  if (!fcRes.ok) return err('NWS forecast fetch failed', `HTTP ${fcRes.status}`);
+  const fcData = await fcRes.json();
+
+  const periods = fcData?.properties?.periods;
+  if (!periods?.length) return err('No forecast periods from NWS');
+
+  // Parse "10 to 20 mph" → 20 (worst case for fire weather)
+  function parseWind(str) {
+    if (!str) return null;
+    const nums = str.match(/\d+/g);
+    return nums ? Math.max(...nums.map(Number)) : null;
+  }
+
+  // Build day map — daytime period takes priority for fire weather params
+  const dayMap = new Map();
+  for (const p of periods) {
+    const date = p.startTime.slice(0, 10);
+    if (p.isDaytime) {
+      dayMap.set(date, {
+        date,
+        maxTemp:    p.temperature,
+        wind:       parseWind(p.windSpeed),
+        windDir:    p.windDirection,
+        rh:         p.relativeHumidity?.value ?? null,
+        precip:     p.probabilityOfPrecipitation?.value ?? null,
+        shortFcast: p.shortForecast,
+      });
+    } else {
+      const existing = dayMap.get(date);
+      if (existing) {
+        // Backfill RH from nighttime if daytime lacked it
+        if (existing.rh == null) existing.rh = p.relativeHumidity?.value ?? null;
+      } else {
+        // "Tonight" case — no daytime period for this date yet
+        dayMap.set(date, {
+          date,
+          maxTemp:    p.temperature,
+          wind:       parseWind(p.windSpeed),
+          windDir:    p.windDirection,
+          rh:         p.relativeHumidity?.value ?? null,
+          precip:     p.probabilityOfPrecipitation?.value ?? null,
+          shortFcast: p.shortForecast,
+        });
+      }
+    }
+  }
+
+  const days = [...dayMap.values()].slice(0, 5);
+
+  // Simple trend analysis for fire weather
+  const rhVals  = days.map(d => d.rh).filter(v => v != null);
+  const wndVals = days.map(d => d.wind).filter(v => v != null);
+  let trend = 'Fire weather conditions relatively stable over the forecast period.';
+
+  if (rhVals.length >= 2) {
+    const rhDelta  = rhVals[rhVals.length - 1] - rhVals[0];
+    const worstRH  = Math.min(...rhVals);
+    const wndDelta = wndVals.length >= 2 ? wndVals[wndVals.length - 1] - wndVals[0] : 0;
+
+    if (worstRH < 25 && wndDelta > 5)
+      trend = `Critical: RH dropping to ${worstRH}% with increasing winds — potential for rapid fire growth and erratic behavior.`;
+    else if (worstRH < 25)
+      trend = `Critical: RH falling to ${worstRH}% — fire behavior will be erratic and difficult to predict during low-humidity periods.`;
+    else if (worstRH < 35 && wndVals.some(v => v > 20))
+      trend = `Elevated: Low RH (${worstRH}%) combined with high winds — monitor closely for Red Flag conditions.`;
+    else if (rhDelta < -15)
+      trend = `Drying trend — RH dropping ${Math.abs(Math.round(rhDelta))}% over forecast period. Monitor fuel moisture before any burn operations.`;
+    else if (rhDelta > 15)
+      trend = `Improving conditions — RH rising ${Math.round(rhDelta)}% over forecast period. Fire behavior risk decreasing.`;
+    else if (wndDelta > 10)
+      trend = `Wind increasing trend — stronger gusts expected later in forecast. Watch for spotting potential and short-range spread.`;
+  }
+
+  return json({ days, trend, generated: ptData?.properties?.generatedAt });
+}
+
+// ─────────────────────────────────────────────
 // NWS ALERTS
 // ─────────────────────────────────────────────
-async function handleAlerts() {
-  const res = await fetch(`https://api.weather.gov/alerts/active?point=${LAT},${LON}`, {
-    headers: { 'User-Agent': 'EKY-FireWatch/1.0 (cloudflare-worker)' }
-  });
+async function handleAlerts(url) {
+  const { lat, lon } = getCoords(url);
+  const res = await fetch(`https://api.weather.gov/alerts/active?point=${lat},${lon}`,
+    { headers: { 'User-Agent': NWS_UA } });
   if (!res.ok) return err('NWS alerts failed', `HTTP ${res.status}`);
   const data = await res.json();
 
@@ -227,22 +438,20 @@ async function handleAlerts() {
 // NIFC IRWIN — ACTIVE FIRE INCIDENTS
 // ─────────────────────────────────────────────
 async function handleFires() {
-  // Bounding box covering Kentucky + surrounding region
   const bbox = '-89,36,-81,39';
-  const url = `https://services3.arcgis.com/T4QMspbfLg3qTGWY/arcgis/rest/services/Active_Fires/FeatureServer/0/query?where=1%3D1&outFields=IncidentName,IncidentTypeCategory,PercentContained,DailyAcres,FireBehaviorGeneral,POOState,UniqueFireIdentifier&geometry=${bbox}&geometryType=esriGeometryEnvelope&spatialRel=esriSpatialRelIntersects&outSR=4326&f=geojson`;
+  const url  = `https://services3.arcgis.com/T4QMspbfLg3qTGWY/arcgis/rest/services/Active_Fires/FeatureServer/0/query?where=1%3D1&outFields=IncidentName,IncidentTypeCategory,PercentContained,DailyAcres,FireBehaviorGeneral,POOState,UniqueFireIdentifier&geometry=${bbox}&geometryType=esriGeometryEnvelope&spatialRel=esriSpatialRelIntersects&outSR=4326&f=geojson`;
 
   const res = await fetch(url);
   if (!res.ok) return err('NIFC IRWIN fetch failed', `HTTP ${res.status}`);
-
   const geojson = await res.json();
   if (!geojson?.features) return err('NIFC returned invalid GeoJSON');
 
   return json({
-    count: geojson.features.length,
+    count:    geojson.features.length,
     features: geojson.features,
-    type: 'FeatureCollection',
-    source: 'NIFC IRWIN Active Fires',
-    fetched: new Date().toISOString(),
+    type:     'FeatureCollection',
+    source:   'NIFC IRWIN Active Fires',
+    fetched:  new Date().toISOString(),
   });
 }
 
@@ -251,19 +460,48 @@ async function handleFires() {
 // ─────────────────────────────────────────────
 async function handleFIRMS() {
   const bbox = '-89,36,-81,39';
-  const url = `https://services9.arcgis.com/RHVPKKiFTONKtxq3/arcgis/rest/services/VIIRS_Thermal_Hotspots_and_Fire_Activity/FeatureServer/0/query?where=1%3D1&outFields=BRIGHTNESS,FRP,DAYNIGHT,ACQ_DATE,CONFIDENCE&geometry=${bbox}&geometryType=esriGeometryEnvelope&spatialRel=esriSpatialRelIntersects&outSR=4326&f=geojson`;
+  const url  = `https://services9.arcgis.com/RHVPKKiFTONKtxq3/arcgis/rest/services/VIIRS_Thermal_Hotspots_and_Fire_Activity/FeatureServer/0/query?where=1%3D1&outFields=BRIGHTNESS,FRP,DAYNIGHT,ACQ_DATE,CONFIDENCE&geometry=${bbox}&geometryType=esriGeometryEnvelope&spatialRel=esriSpatialRelIntersects&outSR=4326&f=geojson`;
 
   const res = await fetch(url);
   if (!res.ok) return err('NASA FIRMS fetch failed', `HTTP ${res.status}`);
-
   const geojson = await res.json();
   if (!geojson?.features) return err('FIRMS returned invalid GeoJSON');
 
   return json({
-    count: geojson.features.length,
+    count:    geojson.features.length,
     features: geojson.features,
-    type: 'FeatureCollection',
-    source: 'NASA FIRMS VIIRS',
-    fetched: new Date().toISOString(),
+    type:     'FeatureCollection',
+    source:   'NASA FIRMS VIIRS',
+    fetched:  new Date().toISOString(),
+  });
+}
+
+// ─────────────────────────────────────────────
+// NWS FWF — FIRE WEATHER FORECAST TEXT PRODUCT
+// Louisville NWS office (LMK) covers Eastern KY
+// ─────────────────────────────────────────────
+async function handleFireBrief() {
+  const listRes = await fetch(
+    'https://api.weather.gov/products/types/FWF/locations/LMK',
+    { headers: { 'User-Agent': NWS_UA } }
+  );
+  if (!listRes.ok) return err('FWF product list failed', `HTTP ${listRes.status}`);
+  const listData = await listRes.json();
+
+  const productId = listData?.['@graph']?.[0]?.id;
+  if (!productId) return err('No FWF products found for LMK office');
+
+  const prodRes = await fetch(
+    `https://api.weather.gov/products/${productId}`,
+    { headers: { 'User-Agent': NWS_UA } }
+  );
+  if (!prodRes.ok) return err('FWF product fetch failed', `HTTP ${prodRes.status}`);
+  const prodData = await prodRes.json();
+
+  return json({
+    issuedAt:  prodData.issuanceTime,
+    office:    prodData.issuingOffice,
+    productId,
+    text:      prodData.productText,
   });
 }

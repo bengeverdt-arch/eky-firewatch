@@ -37,8 +37,11 @@ export async function fetchNWS() {
   updateWxCards();
   if(state.wx.windDirDeg != null) autoWindDir(state.wx.windDirDeg);
 
+  // Show per-parameter source attribution under each wx card
+  if (data.sources) showWxSources(data.sources);
+
   // Alerts non-blocking
-  workerFetch('/alerts','NWS-ALRT').then(showAlerts).catch(e=>DIAG.warn('NWS-ALRT','Alert fetch error',e.message));
+  workerFetch(`/alerts?lat=${state.LAT}&lon=${state.LON}`,'NWS-ALRT').then(showAlerts).catch(e=>DIAG.warn('NWS-ALRT','Alert fetch error',e.message));
 }
 
 export function setWxFallback() {
@@ -70,6 +73,23 @@ export function autoWindDir(deg) {
   dirs.forEach(d=>{ const diff=Math.abs(((deg-d+540)%360)-180); if(diff<min){min=diff;best=d} });
   state.windDeg = best;
   document.querySelectorAll('#dbtns .dbtn').forEach((b,i)=>b.classList.toggle('act',dirs[i]===best));
+}
+
+export function showWxSources(sources) {
+  const map = {
+    temp:    'wTempSrc',
+    rh:      'wRHSrc',
+    wind:    'wWindSrc',
+    gust:    'wGustSrc',
+    dew:     'wDewSrc',
+    precip:  'wPrecipSrc',
+  };
+  for (const [param, elId] of Object.entries(map)) {
+    const el = document.getElementById(elId);
+    if (!el) continue;
+    const s = sources[param];
+    el.textContent = s ? `${s.id} · ${s.distMi} mi${s.source === 'METAR' ? ' (METAR)' : ''}` : '';
+  }
 }
 
 export function showAlerts(data) {

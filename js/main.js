@@ -7,6 +7,7 @@ import { fetchForecast } from './forecast.js';
 import { initLeafletMap, loadFireData } from './map.js';
 import { getLocation } from './geo.js';
 import { recalc } from './calc.js';
+import { fetchFireBrief } from './firebrief.js';
 
 // ── Clock ──
 function tick() {
@@ -52,6 +53,9 @@ export async function loadAll() {
 
   setSplash('LOADING FIRE MAP...', 80);
   if(state.kyMap) await loadFireData();
+
+  setSplash('LOADING FIRE BRIEF...', 92);
+  fetchFireBrief(); // non-blocking — don't await, let it load async
 
   recalc();
   DIAG.info('MAIN','Load complete');
