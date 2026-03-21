@@ -3,6 +3,7 @@ import { state, RAWS_STATIONS } from './state.js';
 import { workerFetch } from './api.js';
 import { DIAG, setSplash } from './diag.js';
 import { recalc, c_F } from './calc.js';
+import { updateMapRawsSelection } from './map.js';
 
 export async function fetchFEMS() {
   setSplash('FETCHING FEMS RAWS FUEL MOISTURE...', 45);
@@ -43,6 +44,10 @@ export async function changeStation(id) {
   DIAG.info('RAWS', `Station changed to ${station?.name} (${id})`);
   state.fm = {fm1:null,fm10:null,fm100:null,fm1000:null,erc:null,bi:null,kbdi:null};
   updateFMBars();
+  // Sync map markers and dropdown
+  updateMapRawsSelection(id);
+  const sel = document.getElementById('rawsSelect');
+  if (sel) sel.value = id;
   await fetchFEMS();
 }
 

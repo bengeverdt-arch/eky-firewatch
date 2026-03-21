@@ -1,24 +1,15 @@
 /* ── MAP SECTION ── */
 .kymap-section{grid-column:1/-1;background:var(--s1);border:1px solid var(--border);
   border-radius:6px;overflow:visible;animation:fadeUp .45s .26s ease both}
-.maptabs{display:flex;background:var(--s2);border-bottom:1px solid var(--border);
-  padding:0 16px;overflow-x:auto}
-.mtab{font-family:var(--mono);font-size:10px;letter-spacing:1.5px;text-transform:uppercase;
-  color:var(--muted);padding:11px 13px;border-bottom:2px solid transparent;
-  cursor:pointer;transition:all .2s;white-space:nowrap}
-.mtab:hover{color:var(--text)}.mtab.act{color:var(--accent);border-bottom-color:var(--accent)}
-.tbadge{display:inline-block;background:var(--accent);color:white;font-size:8px;
-  padding:1px 5px;border-radius:7px;margin-left:5px;vertical-align:middle}
-.mapstrip{display:flex;align-items:center;justify-content:space-between;
-  padding:7px 17px;background:rgba(255,69,0,.03);border-bottom:1px solid var(--border);
-  flex-wrap:wrap;gap:6px}
-.msrc{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.4px}
-.msrc strong{color:var(--amber)}
-.mopen{font-family:var(--mono);font-size:10px;color:var(--accent);text-decoration:none;
-  border:1px solid rgba(255,69,0,.3);padding:3px 10px;border-radius:3px;
-  letter-spacing:1px;text-transform:uppercase;transition:all .2s}
-.mopen:hover{background:rgba(255,69,0,.1);border-color:var(--accent)}
-.mpane{display:none}.mpane.act{display:block}
+
+/* layer toggle buttons in panel header */
+.map-controls{display:flex;align-items:center;gap:5px}
+.mlayer{font-family:var(--mono);font-size:9px;letter-spacing:1px;text-transform:uppercase;
+  color:var(--muted);background:var(--s2);border:1px solid var(--border2);border-radius:12px;
+  padding:3px 10px;cursor:pointer;transition:all .2s;white-space:nowrap}
+.mlayer:hover:not(.act){color:var(--text);border-color:var(--border)}
+.mlayer.act{color:var(--accent);border-color:rgba(255,69,0,.4);background:rgba(255,69,0,.07)}
+
 #kyMapDiv{height:500px;background:#0a0c10}
 .leaflet-container{background:#0a0c10!important}
 .leaflet-tile-pane{filter:brightness(.85) saturate(.5) hue-rotate(190deg)}

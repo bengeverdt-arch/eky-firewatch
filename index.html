@@ -212,47 +212,25 @@
 
   <!-- MAP SECTION -->
   <div class="kymap-section">
-    <div class="ph"><span class="ptitle">FIRE MAP — EAST KENTUCKY</span><span class="pbadge">Multi-Source</span></div>
-    <div class="maptabs">
-      <div class="mtab act" onclick="switchTab(this,'custom')">KY Live Map <span class="tbadge">LIVE</span></div>
-      <div class="mtab" onclick="switchTab(this,'kdf')">KDF fiResponse</div>
-      <div class="mtab" onclick="switchTab(this,'firms')">NASA FIRMS</div>
-      <div class="mtab" onclick="switchTab(this,'nifc')">NIFC InciWeb</div>
-      <div class="mtab" onclick="switchTab(this,'nws')">NWS Fire Wx</div>
-      <div class="mtab" onclick="switchTab(this,'drought')">Drought Monitor</div>
-    </div>
-    <div class="mpane act" id="tab-custom">
-      <div id="mapStatus" style="color:var(--muted)">Initializing fire map...</div>
-      <div style="position:relative">
-        <div id="kyMapDiv"></div>
-        <div id="mapLegend">
-          <div style="font-family:var(--mono);font-size:9px;letter-spacing:1.5px;color:var(--muted);margin-bottom:6px">LEGEND</div>
-          <div class="legrow"><div class="legdot" style="background:#ff2020"></div><span>Active Fire (FIRMS VIIRS)</span></div>
-          <div class="legrow"><div class="legdot" style="background:#ff8c00"></div><span>IRWIN Incident</span></div>
-          <div class="legrow"><div class="legdot" style="background:var(--amber);border:2px solid var(--accent)"></div><span>Selected RAWS Station</span></div>
-          <div class="legrow"><div class="legdot" style="background:rgba(0,229,160,.35);border:2px solid var(--green)"></div><span>Your Location</span></div>
-        </div>
+    <div class="ph">
+      <span class="ptitle">FIRE MAP — EAST KENTUCKY</span>
+      <div class="map-controls">
+        <button class="mlayer act" id="lyrRaws"  onclick="toggleMapLayer('raws',this)">⬤ RAWS</button>
+        <button class="mlayer act" id="lyrFirms" onclick="toggleMapLayer('firms',this)">⬤ FIRMS</button>
+        <button class="mlayer act" id="lyrFires" onclick="toggleMapLayer('fires',this)">⬤ INCIDENTS</button>
       </div>
     </div>
-    <div class="mpane" id="tab-kdf">
-      <div class="mapstrip"><span class="msrc">SOURCE: <strong>Kentucky Division of Forestry / Technosylva fiResponse</strong></span><a class="mopen" href="https://kdf.firesponse.com/public/" target="_blank">↗ Open KDF Map</a></div>
-      <iframe src="https://kdf.firesponse.com/public/" loading="lazy" title="KDF Fire Map"></iframe>
-    </div>
-    <div class="mpane" id="tab-firms">
-      <div class="mapstrip"><span class="msrc">SOURCE: <strong>NASA FIRMS</strong> — MODIS + VIIRS Satellite Thermal · 24hr · East KY</span><a class="mopen" href="https://firms.modaps.eosdis.nasa.gov/map/#d:24hrs;@-83.0,37.5,8z" target="_blank">↗ Open FIRMS</a></div>
-      <iframe src="https://firms.modaps.eosdis.nasa.gov/map/#d:24hrs;@-83.0,37.5,8z" loading="lazy" title="NASA FIRMS"></iframe>
-    </div>
-    <div class="mpane" id="tab-nifc">
-      <div class="mapstrip"><span class="msrc">SOURCE: <strong>NIFC InciWeb</strong> — Active incident reports &amp; perimeters</span><a class="mopen" href="https://inciweb.wildfire.gov/" target="_blank">↗ Open InciWeb</a></div>
-      <iframe src="https://inciweb.wildfire.gov/" loading="lazy" title="InciWeb"></iframe>
-    </div>
-    <div class="mpane" id="tab-nws">
-      <div class="mapstrip"><span class="msrc">SOURCE: <strong>NOAA/NWS Louisville (LMK)</strong> — Fire weather forecasts &amp; Red Flag Warnings</span><a class="mopen" href="https://www.weather.gov/lmk/" target="_blank">↗ NWS LMK</a></div>
-      <iframe src="https://www.weather.gov/lmk/" loading="lazy" title="NWS LMK"></iframe>
-    </div>
-    <div class="mpane" id="tab-drought">
-      <div class="mapstrip"><span class="msrc">SOURCE: <strong>NDMC</strong> — U.S. Drought Monitor · Kentucky</span><a class="mopen" href="https://droughtmonitor.unl.edu/CurrentMap/StateDroughtMonitor.aspx?KY" target="_blank">↗ Drought Monitor</a></div>
-      <iframe src="https://droughtmonitor.unl.edu/CurrentMap/StateDroughtMonitor.aspx?KY" loading="lazy" title="Drought Monitor"></iframe>
+    <div id="mapStatus">Initializing fire map...</div>
+    <div style="position:relative">
+      <div id="kyMapDiv"></div>
+      <div id="mapLegend">
+        <div style="font-family:var(--mono);font-size:9px;letter-spacing:1.5px;color:var(--muted);margin-bottom:6px">LEGEND</div>
+        <div class="legrow"><div class="legdot" style="background:#ff2020"></div><span>IRWIN Fire Incident</span></div>
+        <div class="legrow"><div class="legdot" style="background:rgba(255,140,0,.85)"></div><span>FIRMS Hotspot</span></div>
+        <div class="legrow"><div class="legdot" style="background:#ffab00;border:2px solid #ff4500"></div><span>RAWS (active)</span></div>
+        <div class="legrow"><div class="legdot" style="background:#3d3000;border:1.5px solid #ffab00"></div><span>RAWS (inactive)</span></div>
+        <div class="legrow"><div class="legdot" style="background:rgba(0,229,160,.4);border:2px solid #00e5a0"></div><span>Your Location</span></div>
+      </div>
     </div>
     <div class="qlbar">
       <a class="ql" href="https://kdf.firesponse.com/public/" target="_blank"><span class="qlico">🏛️</span><span><span class="qln">KDF Fire Response</span><span class="qld">Official KY state fire map</span></span></a>

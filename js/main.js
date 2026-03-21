@@ -4,7 +4,7 @@ import { DIAG, openDiag, closeDiag, copyLog, setSplash, dismissSplash } from './
 import { fetchNWS } from './wx.js';
 import { fetchFEMS, changeStation } from './fems.js';
 import { fetchForecast } from './forecast.js';
-import { initLeafletMap, loadFireData } from './map.js';
+import { initLeafletMap, loadFireData, toggleMapLayer } from './map.js';
 import { getLocation } from './geo.js';
 import { recalc } from './calc.js';
 import { fetchFireBrief } from './firebrief.js';
@@ -17,14 +17,6 @@ function tick() {
   document.getElementById('fTime').textContent = s;
 }
 setInterval(tick, 1000); tick();
-
-// ── Map tab switcher ──
-function switchTab(tab, id) {
-  document.querySelectorAll('.mtab').forEach(t=>t.classList.remove('act'));
-  document.querySelectorAll('.mpane').forEach(p=>p.classList.remove('act'));
-  tab.classList.add('act');
-  document.getElementById('tab-'+id).classList.add('act');
-}
 
 // ── Wind direction selector (spread panel) ──
 function setWD(btn, deg) {
@@ -73,10 +65,10 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 
 // ── Expose functions needed by inline HTML event handlers ──
-window.loadAll       = loadAll;
-window.openDiag      = openDiag;
-window.closeDiag     = closeDiag;
-window.copyLog       = copyLog;
-window.switchTab     = switchTab;
-window.setWD         = setWD;
-window.changeStation = changeStation;
+window.loadAll        = loadAll;
+window.openDiag       = openDiag;
+window.closeDiag      = closeDiag;
+window.copyLog        = copyLog;
+window.setWD          = setWD;
+window.changeStation  = changeStation;
+window.toggleMapLayer = toggleMapLayer;
