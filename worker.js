@@ -50,10 +50,19 @@ function haverDist(lat1, lon1, lat2, lon2) {
 }
 
 // Unit conversions
-const C2F     = c => c != null ? Math.round(c * 9/5 + 32) : null;
-const mps2mph = m => m != null ? Math.round(m * 2.237) : null;
-const kt2mph  = k => k != null ? Math.round(k * 1.15078) : null;
-const m2in    = m => m != null ? Math.round(m * 39.3701 * 100) / 100 : null;
+const C2F    = c => c != null ? Math.round(c * 9/5 + 32) : null;
+const kt2mph = k => k != null ? Math.round(k * 1.15078) : null;
+const m2in   = m => m != null ? Math.round(m * 39.3701 * 100) / 100 : null;
+
+// NWS changed wind speed unit from m/s to km/h — handle both
+function nwsSpeed2mph(obs) {
+  if (!obs) return null;
+  const v = obs.value;
+  if (v == null) return null;
+  const unit = obs.unitCode || '';
+  if (unit.includes('km_h') || unit.includes('km/h')) return Math.round(v * 0.621371);
+  return Math.round(v * 2.237); // assume m/s
+}
 
 // Relative humidity from temp + dewpoint (Celsius), Magnus formula
 function rhFromTD(t, td) {
@@ -186,8 +195,8 @@ async function handleNWS(url) {
   const extractors = {
     temp:    obs => C2F(obs?.temperature?.value),
     rh:      obs => obs?.relativeHumidity?.value != null ? Math.round(obs.relativeHumidity.value) : null,
-    wind:    obs => mps2mph(obs?.windSpeed?.value),
-    gust:    obs => mps2mph(obs?.windGust?.value),
+    wind:    obs => nwsSpeed2mph(obs?.windSpeed),
+    gust:    obs => nwsSpeed2mph(obs?.windGust),
     dew:     obs => C2F(obs?.dewpoint?.value),
     precip:  obs => m2in(obs?.precipitationLastHour?.value),
     windDir: obs => obs?.windDirection?.value ?? null,
