@@ -78,7 +78,7 @@
 .dsummary{font-family:var(--mono);font-size:10px;color:var(--muted);
   letter-spacing:.4px;text-align:right;line-height:1.6;max-width:270px}
 .dbarwrap{display:flex;flex-direction:column;gap:4px}
-.dbartrack{height:9px;background:var(--border);border-radius:5px;overflow:hidden;position:relative}
+.dbartrack{height:9px;background:var(--border2);border-radius:5px;overflow:hidden;position:relative}
 .dbarfill{height:100%;border-radius:5px;
   transition:width .7s cubic-bezier(.4,0,.2,1),background .5s;position:relative}
 .dbarfill::after{content:'';position:absolute;right:0;top:0;bottom:0;
