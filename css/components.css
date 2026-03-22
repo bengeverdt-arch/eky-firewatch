@@ -16,7 +16,7 @@
 .refbtn.spin{color:var(--accent);animation:rot 1s linear infinite}
 
 /* ── WX PANEL ── */
-.wxp{grid-column:1;grid-row:1/3;display:flex;flex-direction:column}
+.wxp{display:flex;flex-direction:column}
 .wxloc{padding:10px 14px;background:linear-gradient(135deg,rgba(255,69,0,.05) 0%,transparent 60%);
   border-bottom:1px solid var(--border);
   display:flex;align-items:center;justify-content:space-between}
