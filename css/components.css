@@ -132,7 +132,7 @@
 .dbtn:hover,.dbtn.act{background:var(--accent);border-color:var(--accent);color:white}
 
 /* ── FORECAST PANEL ── */
-.fcastp{grid-column:2;grid-row:2}
+.fcastp{}
 .fcastbody{padding:13px 17px;display:flex;flex-direction:column;gap:10px}
 .fcastgrid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
 .fcastday{background:var(--s2);border:1px solid var(--border);border-radius:4px;
