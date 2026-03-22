@@ -67,7 +67,7 @@
 .fmextra-val{font-family:var(--cond);font-size:18px;font-weight:700;color:var(--amber);line-height:1}
 
 /* ── DANGER PANEL ── */
-.dangp{grid-column:2;grid-row:1}
+.dangp{}
 .dangbody{padding:15px 17px;display:flex;flex-direction:column;gap:13px}
 .dangmain{display:flex;align-items:flex-start;justify-content:space-between;gap:14px}
 .drating{font-family:var(--cond);font-size:52px;font-weight:800;
