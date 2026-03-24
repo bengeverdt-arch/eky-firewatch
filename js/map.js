@@ -147,6 +147,10 @@ export function toggleMapLayer(name, btn) {
   if (state.kyMap.hasLayer(layer)) {
     state.kyMap.removeLayer(layer);
     btn.classList.remove('act');
+    if (name === 'landfire') {
+      const fl = document.getElementById('fuelLegend');
+      if (fl) fl.style.display = 'none';
+    }
   } else {
     // Fuel layer goes below vector overlays — insert before perimGroup
     if (name === 'landfire') {
