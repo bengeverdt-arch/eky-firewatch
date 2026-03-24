@@ -97,5 +97,64 @@ export function updateFMBars() {
     document.getElementById('fmKBDI').textContent=fm.kbdi.toFixed(0);
     document.getElementById('fmKBDI').style.color=fm.kbdi>400?'var(--red)':fm.kbdi>200?'var(--orange)':'var(--green)';
   }
+
+  // Plain-language fuel moisture context blurb
+  const ctx = getFMContext(state.fm, state.wx);
+  const ctxEl = document.getElementById('fmContext');
+  if (ctxEl) {
+    if (ctx) {
+      ctxEl.textContent = ctx.text;
+      ctxEl.className = `fmctx ${ctx.level}`;
+      ctxEl.style.display = 'block';
+    } else {
+      ctxEl.style.display = 'none';
+    }
+  }
+
   recalc();
+}
+
+function getFMContext(fm, wx) {
+  const {fm1, fm10, fm100, kbdi} = fm;
+  const rh   = wx?.rh;
+  const wind = wx?.wind;
+
+  // Priority: worst condition leads
+  if (fm1 != null && fm1 < 3) {
+    return { level: 'critical', text: `1-hr fuels at ${fm1}% — near flash point. Fire will travel faster than crews can move on flat ground. No engagement without established escape routes and safety zones confirmed.` };
+  }
+
+  if (fm1 != null && fm1 < 5 && rh != null && rh < 20) {
+    return { level: 'critical', text: `1-hr fuels critically dry at ${fm1}% and RH at ${rh}% — fine fuel moisture and atmospheric dryness are both at critical levels simultaneously. Expect aggressive fire behavior from first ignition.` };
+  }
+
+  if (fm1 != null && fm1 < 5) {
+    return { level: 'critical', text: `1-hr fuels critically dry at ${fm1}%. Fire starts on contact with sparks or embers and will spread rapidly in grass, leaf litter, and needles. Identify your outs before any action.` };
+  }
+
+  if (fm1 != null && fm1 < 8 && wind != null && wind > 15) {
+    return { level: 'warn', text: `1-hr fuels at ${fm1}% with ${wind} mph winds — drier fine fuels and elevated wind are compounding spread risk. Uphill and downwind flanks will move faster than expected.` };
+  }
+
+  if (kbdi != null && kbdi > 600) {
+    return { level: 'warn', text: `Drought index at ${Math.round(kbdi)} (KBDI) — root zone moisture severely depleted. Underground burning and hidden hotspots are likely. Plan for extended mop-up; suppression does not equal extinguishment in these conditions.` };
+  }
+
+  if (fm1 != null && fm1 < 8) {
+    return { level: 'warn', text: `1-hr fuels at ${fm1}% — below critical threshold. Direct attack on the head of a running fire carries elevated risk. Prioritize flanks and use indirect tactics if the head is moving.` };
+  }
+
+  if (kbdi != null && kbdi > 400) {
+    return { level: 'warn', text: `Drought index at ${Math.round(kbdi)} (KBDI) — soil moisture depleted. Fire will hold heat underground after suppression. Thorough mop-up and extended patrol required.` };
+  }
+
+  if (fm10 != null && fm10 < 7) {
+    return { level: 'warn', text: `10-hr fuels at ${fm10}% — ladder fuels, brush, and logging slash will sustain burning and carry fire into the canopy. Watch for torching on steep slopes.` };
+  }
+
+  if (fm100 != null && fm100 < 10) {
+    return { level: 'warn', text: `100-hr fuels at ${fm100}% — heavy fuel beds will sustain long-duration burning. Expect high resource demand for any extended attack operation.` };
+  }
+
+  return null;
 }
