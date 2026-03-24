@@ -15,8 +15,9 @@ export function initLeafletMap() {
   state.kyMap = L.map('kyMapDiv', { center: [37.4, -83.8], zoom: 7 });
   setTimeout(() => state.kyMap.invalidateSize(), 500);
 
-  L.tileLayer('https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png', {
-    attribution: '&copy; Stadia Maps', maxZoom: 20,
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/">CARTO</a>',
+    subdomains: 'abcd', maxZoom: 20,
   }).addTo(state.kyMap);
 
   // Layer groups — each toggleable independently
