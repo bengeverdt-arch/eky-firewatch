@@ -167,7 +167,6 @@ export function toggleMapLayer(name, btn) {
     // Fuel layer goes below vector overlays — insert before perimGroup
     if (name === 'landfire') {
       layer.addTo(state.kyMap);
-      layer.bringToBack();
       const fl = document.getElementById('fuelLegend');
       if (fl) fl.style.display = 'block';
     } else {
