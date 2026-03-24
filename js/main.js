@@ -88,3 +88,4 @@ window.changeStation  = changeStation;
 window.toggleMapLayer = toggleMapLayer;
 window.openBrief      = openBrief;
 window.closeBrief     = closeBrief;
+window.toggleTheme    = toggleTheme;
