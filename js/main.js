@@ -4,7 +4,7 @@ import { DIAG, openDiag, closeDiag, copyLog, setSplash, dismissSplash } from './
 import { fetchNWS } from './wx.js';
 import { fetchFEMS, changeStation } from './fems.js';
 import { fetchForecast } from './forecast.js';
-import { initLeafletMap, loadFireData, toggleMapLayer } from './map.js';
+import { initLeafletMap, loadFireData, toggleMapLayer, swapBasemap } from './map.js';
 import { getLocation } from './geo.js';
 import { recalc } from './calc.js';
 import { fetchFireBrief, openBrief, closeBrief } from './firebrief.js';
