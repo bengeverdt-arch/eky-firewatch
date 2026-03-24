@@ -60,6 +60,11 @@
 .fmfill{height:100%;border-radius:3px;transition:width .7s cubic-bezier(.4,0,.2,1),background .5s}
 .fmval{font-family:var(--mono);font-size:10px;font-weight:600;
   width:36px;text-align:right;flex-shrink:0;transition:color .3s}
+.fmctx{margin:8px 0 0;padding:8px 11px;border-left:3px solid var(--fmctx-clr,var(--border2));
+  background:rgba(255,255,255,.02);border-radius:0 3px 3px 0;
+  font-family:var(--mono);font-size:10px;color:var(--muted);line-height:1.6;display:none}
+.fmctx.warn{--fmctx-clr:var(--orange);color:var(--amber)}
+.fmctx.critical{--fmctx-clr:var(--red);color:#ff8080}
 .fmextra{margin-top:8px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
 .fmextra-cell{background:var(--s3);border:1px solid var(--border);border-radius:3px;
   padding:6px 8px;text-align:center}
