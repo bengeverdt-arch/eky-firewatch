@@ -34,6 +34,25 @@ export function getRating(f) {
   return{lbl:'EXTREME',c:'var(--extreme)',pct:Math.min(100,80+(f-80)/20*20),lvl:4,summary:'EXTREME — Near/at Red Flag criteria. All fires potentially uncontrollable. Review LCES with full crew before any engagement.'};
 }
 
+function buildDangerSummary(r, wx, fm) {
+  if (r.lvl < 2) return r.summary; // LOW / MODERATE — static is fine
+
+  const {rh, wind} = wx;
+  const {fm1} = fm;
+  const parts = [];
+
+  if (rh  != null && rh  < 30) parts.push(`RH at ${rh}%`);
+  if (wind != null && wind > 12) parts.push(`${wind} mph winds`);
+  if (fm1  != null && fm1 < 8)  parts.push(`1-hr fuels at ${fm1}%`);
+
+  if (!parts.length) return r.summary;
+
+  const cond = parts.join(', ');
+  if (r.lvl === 4) return `${cond} — near Red Flag criteria. All fires potentially uncontrollable. Crew safety overrides all other objectives. Review LCES with full crew before any engagement.`;
+  if (r.lvl === 3) return `${cond} — rapid spread and spotting expected. Confirm escape routes and safety zones before engagement. No fire is worth a life.`;
+  return `${cond} — fires start easily and spread quickly on slopes and ridges. LCES required on all assignments.`;
+}
+
 export function recalc() {
   const {wx, fm} = state;
   const f = calcFWI(wx.temp, wx.rh, wx.wind);
@@ -41,7 +60,7 @@ export function recalc() {
   const rEl = document.getElementById('dRating');
   rEl.textContent = r.lbl; rEl.style.color = r.c;
   document.getElementById('dFWI').textContent = `FWI: ${f??'—'}`;
-  document.getElementById('dSummary').textContent = r.summary;
+  document.getElementById('dSummary').textContent = buildDangerSummary(r, wx, fm);
   document.getElementById('dBar').style.cssText = `width:${Math.max(1,r.pct)}%;background:${r.c}`;
   ['dl0','dl1','dl2','dl3','dl4'].forEach((id,i)=>document.getElementById(id).classList.toggle('act',i===r.lvl));
 
