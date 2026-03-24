@@ -137,13 +137,24 @@ export function updateMapRawsSelection(id) {
 
 // ── Layer toggle (called from HTML onclick) ──
 export function toggleMapLayer(name, btn) {
-  const group = name === 'raws' ? rawsGroup : name === 'firms' ? firmsGroup : name === 'fires' ? irwinGroup : perimGroup;
-  if (!group || !state.kyMap) return;
-  if (state.kyMap.hasLayer(group)) {
-    state.kyMap.removeLayer(group);
+  const layer = name === 'raws'      ? rawsGroup
+              : name === 'firms'     ? firmsGroup
+              : name === 'fires'     ? irwinGroup
+              : name === 'perimeters'? perimGroup
+              : name === 'landfire'  ? fuelLayer
+              : null;
+  if (!layer || !state.kyMap) return;
+  if (state.kyMap.hasLayer(layer)) {
+    state.kyMap.removeLayer(layer);
     btn.classList.remove('act');
   } else {
-    state.kyMap.addLayer(group);
+    // Fuel layer goes below vector overlays — insert before perimGroup
+    if (name === 'landfire') {
+      layer.addTo(state.kyMap);
+      layer.bringToBack();
+    } else {
+      state.kyMap.addLayer(layer);
+    }
     btn.classList.add('act');
   }
 }
