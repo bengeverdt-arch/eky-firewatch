@@ -289,3 +289,13 @@ export async function loadFireData() {
       : `No active fire detections in region · Checked ${new Date().toLocaleTimeString()}`;
   }
 }
+
+// ── Basemap swap for light/dark theme ──
+export function swapBasemap(light) {
+  if (!basemapLayer) return;
+  basemapLayer.setUrl(
+    light
+      ? 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png'
+      : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+  );
+}
