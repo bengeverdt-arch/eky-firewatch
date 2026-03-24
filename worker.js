@@ -343,12 +343,34 @@ async function handleForecast(url) {
   if (!ptRes.ok) return err('NWS points failed for forecast', `HTTP ${ptRes.status}`);
   const ptData = await ptRes.json();
 
-  const fcstUrl = ptData?.properties?.forecast;
+  const fcstUrl    = ptData?.properties?.forecast;
+  const hourlyUrl  = ptData?.properties?.forecastHourly;
   if (!fcstUrl) return err('No forecast URL from NWS');
 
-  const fcRes = await fetch(fcstUrl, { headers: { 'User-Agent': NWS_UA } });
+  const [fcRes, hrRes] = await Promise.all([
+    fetch(fcstUrl,   { headers: { 'User-Agent': NWS_UA } }),
+    hourlyUrl ? fetch(hourlyUrl, { headers: { 'User-Agent': NWS_UA } }) : Promise.resolve(null),
+  ]);
   if (!fcRes.ok) return err('NWS forecast fetch failed', `HTTP ${fcRes.status}`);
   const fcData = await fcRes.json();
+
+  // Build a date→minRH map from hourly periods (afternoon window = peak fire weather)
+  const hourlyRH = new Map();
+  if (hrRes?.ok) {
+    const hrData = await hrRes.json();
+    for (const p of (hrData?.properties?.periods || [])) {
+      const date = p.startTime.slice(0, 10);
+      const hour = new Date(p.startTime).getUTCHours();
+      // Local Kentucky hours roughly 14–21 UTC cover the 9am–4pm fire weather window
+      if (hour >= 14 && hour <= 21) {
+        const rh = p.relativeHumidity?.value;
+        if (rh != null) {
+          const cur = hourlyRH.get(date);
+          hourlyRH.set(date, cur == null ? rh : Math.min(cur, rh)); // keep min (worst case)
+        }
+      }
+    }
+  }
 
   const periods = fcData?.properties?.periods;
   if (!periods?.length) return err('No forecast periods from NWS');
