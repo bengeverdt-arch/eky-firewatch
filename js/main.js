@@ -55,8 +55,22 @@ export async function loadAll() {
   dismissSplash();
 }
 
+// ── Theme toggle ──
+function toggleTheme() {
+  const isLight = document.documentElement.classList.toggle('light');
+  localStorage.setItem('fwTheme', isLight ? 'light' : 'dark');
+  document.getElementById('themeBtn').textContent = isLight ? '🌙 NIGHT MODE' : '☀ DAY MODE';
+  swapBasemap(isLight);
+}
+
 // ── Init ──
 window.addEventListener('DOMContentLoaded', () => {
+  // Restore saved theme before map init so basemap starts correct
+  if (localStorage.getItem('fwTheme') === 'light') {
+    document.documentElement.classList.add('light');
+    document.getElementById('themeBtn').textContent = '🌙 NIGHT MODE';
+  }
+
   DIAG.info('INIT','Dashboard loaded, initializing Leaflet map');
   setSplash('INITIALIZING...', 5);
   initLeafletMap();
