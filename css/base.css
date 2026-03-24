@@ -9,6 +9,23 @@
   --cond:'Barlow Condensed',sans-serif;
   --body:'Barlow',sans-serif;
 }
+
+/* ── LIGHT MODE ── */
+html.light {
+  --bg:#f0f3f8; --s1:#ffffff; --s2:#edf1f8; --s3:#e4e9f4;
+  --border:#cdd5e8; --border2:#b8c2d8;
+  --text:#1a2035; --muted:#5a6480; --muted2:#8892aa;
+  /* accent/danger colors unchanged — they need to read the same in both themes */
+}
+html.light body { background:var(--bg) }
+html.light body::after {
+  background-image:linear-gradient(rgba(255,69,0,.04) 1px,transparent 1px),
+                   linear-gradient(90deg,rgba(255,69,0,.04) 1px,transparent 1px);
+}
+html.light header {
+  background:rgba(240,243,248,.96);
+}
+html.light .briefbtn { background:var(--s2) }
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:var(--bg);color:var(--text);font-family:var(--body);min-height:100vh}
 body::after{content:'';position:fixed;inset:0;
