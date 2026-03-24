@@ -416,6 +416,13 @@ async function handleForecast(url) {
     }
   }
 
+  // Fill any still-null RH from hourly data
+  for (const [date, day] of dayMap) {
+    if (day.rh == null && hourlyRH.has(date)) {
+      day.rh = hourlyRH.get(date);
+    }
+  }
+
   const days = [...dayMap.values()].slice(0, 5);
 
   // Simple trend analysis for fire weather
