@@ -12,7 +12,15 @@
 
 #kyMapDiv{height:500px;background:#0a0c10}
 .leaflet-container{background:#0a0c10!important}
-.leaflet-tile-pane{filter:brightness(.85) saturate(.5) hue-rotate(190deg)}
+/* Dark mode tile filter — scoped so LANDFIRE's custom pane is unaffected */
+html:not(.light) .leaflet-tile-pane{filter:brightness(.85) saturate(.5) hue-rotate(190deg)}
+
+/* Light mode map overrides */
+html.light #kyMapDiv{background:#e8ecf2}
+html.light .leaflet-container{background:#e8ecf2!important}
+html.light #mapLegend{background:rgba(255,255,255,.96);border-color:var(--border2);color:var(--text)}
+html.light #mapLegend span{color:var(--text)}
+html.light #mapStatus{background:var(--s3);color:var(--muted)}
 #mapLegend{position:absolute;bottom:18px;left:18px;z-index:500;
   background:rgba(7,9,11,.92);border:1px solid var(--border2);border-radius:4px;
   padding:10px 13px;font-family:var(--mono);font-size:10px;color:var(--muted)}
