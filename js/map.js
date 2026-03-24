@@ -8,6 +8,7 @@ let firmsGroup   = null;
 let irwinGroup   = null;
 let perimGroup   = null;
 let fuelLayer    = null; // LANDFIRE FBFM40 WMS overlay
+let basemapLayer = null; // reference kept for light/dark swap
 let userMarker   = null;
 let rawsMarkers  = {}; // id → L.marker
 
