@@ -152,6 +152,8 @@ export function toggleMapLayer(name, btn) {
     if (name === 'landfire') {
       layer.addTo(state.kyMap);
       layer.bringToBack();
+      const fl = document.getElementById('fuelLegend');
+      if (fl) fl.style.display = 'block';
     } else {
       state.kyMap.addLayer(layer);
     }
