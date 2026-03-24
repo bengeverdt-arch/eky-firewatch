@@ -3,12 +3,13 @@ import { state, RAWS_STATIONS } from './state.js';
 import { workerFetch } from './api.js';
 import { DIAG } from './diag.js';
 
-let rawsGroup   = null;
-let firmsGroup  = null;
-let irwinGroup  = null;
-let perimGroup  = null;
-let userMarker  = null;
-let rawsMarkers = {}; // id → L.marker
+let rawsGroup    = null;
+let firmsGroup   = null;
+let irwinGroup   = null;
+let perimGroup   = null;
+let fuelLayer    = null; // LANDFIRE FBFM40 WMS overlay
+let userMarker   = null;
+let rawsMarkers  = {}; // id → L.marker
 
 export function initLeafletMap() {
   DIAG.info('MAP', 'Initializing Leaflet map');
