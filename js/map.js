@@ -17,18 +17,29 @@ export function initLeafletMap() {
   state.kyMap = L.map('kyMapDiv', { center: [37.4, -83.8], zoom: 7 });
   setTimeout(() => state.kyMap.invalidateSize(), 500);
 
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/">CARTO</a>',
-    subdomains: 'abcd', maxZoom: 20,
-  }).addTo(state.kyMap);
+  const isLight = document.documentElement.classList.contains('light');
+  basemapLayer = L.tileLayer(
+    isLight
+      ? 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png'
+      : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+    {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/">CARTO</a>',
+      subdomains: 'abcd', maxZoom: 20,
+    }
+  ).addTo(state.kyMap);
 
-  // LANDFIRE fuel model WMS — sits in the tile pane (z-index 200),
-  // automatically renders below all vector overlays. Off by default.
+  // LANDFIRE fuel model WMS — custom pane (z-index 250) keeps it above the
+  // basemap but below all vector overlays, AND outside the tile pane CSS filter
+  // so fuel model colors render accurately.
+  state.kyMap.createPane('landfirePave');
+  state.kyMap.getPane('landfirePave').style.zIndex = 250;
+
   fuelLayer = L.tileLayer.wms('https://edcintl.cr.usgs.gov/geoserver/landfire/conus_2024/ows', {
     layers:      'LF2024_FBFM40_CONUS',
     format:      'image/png',
     transparent: true,
     opacity:     0.72,
+    pane:        'landfirePave',
     attribution: '<a href="https://landfire.gov" target="_blank">LANDFIRE 2024 · USGS</a>',
   });
   // Not added to map yet — user toggles it on
