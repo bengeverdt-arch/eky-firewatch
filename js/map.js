@@ -21,6 +21,17 @@ export function initLeafletMap() {
     subdomains: 'abcd', maxZoom: 20,
   }).addTo(state.kyMap);
 
+  // LANDFIRE fuel model WMS — sits in the tile pane (z-index 200),
+  // automatically renders below all vector overlays. Off by default.
+  fuelLayer = L.tileLayer.wms('https://edcintl.cr.usgs.gov/geoserver/landfire/conus_2024/ows', {
+    layers:      'LF2024_FBFM40_CONUS',
+    format:      'image/png',
+    transparent: true,
+    opacity:     0.72,
+    attribution: '<a href="https://landfire.gov" target="_blank">LANDFIRE 2024 · USGS</a>',
+  });
+  // Not added to map yet — user toggles it on
+
   // Layer groups — each toggleable independently
   perimGroup = L.layerGroup().addTo(state.kyMap);  // perimeters below everything else
   rawsGroup  = L.layerGroup().addTo(state.kyMap);
