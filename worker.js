@@ -12,8 +12,79 @@
  *  GET /firms              → NASA FIRMS VIIRS thermal hotspots
  *  GET /perimeters         → Fire perimeters year-to-date (NIFC WFIGS)
  *  GET /fire-brief         → NWS FWF text product (Louisville/LMK office)
- *  GET /health             → Health check
+ *  GET /fuel-model?lat=&lon= → LANDFIRE FBFM40 fuel model at GPS point (READ Option B)
+ *  GET /health               → Health check
  */
+
+// ── FBFM40 Fuel Model Lookup (Scott & Burgan 40 + Original 13) ──
+const FBFM40 = {
+  // Non-burnable
+  91:  { name: 'Urban/Developed',              group: 'NB', burnable: false, desc: 'Non-burnable — developed land' },
+  92:  { name: 'Snow/Ice',                     group: 'NB', burnable: false, desc: 'Non-burnable — snow or ice' },
+  93:  { name: 'Agriculture',                  group: 'NB', burnable: false, desc: 'Agricultural land — low fire risk' },
+  98:  { name: 'Water',                        group: 'NB', burnable: false, desc: 'Non-burnable — open water' },
+  99:  { name: 'Barren',                       group: 'NB', burnable: false, desc: 'Non-burnable — bare ground' },
+  // Original 13 models
+  1:   { name: 'FM1 — Short Grass',            group: 'GR', burnable: true,  desc: 'Short dry grass; fast spread, low flame height' },
+  2:   { name: 'FM2 — Timber/Grass Mix',       group: 'GS', burnable: true,  desc: 'Mixed grass and open timber; moderate spread' },
+  3:   { name: 'FM3 — Tall Grass',             group: 'GR', burnable: true,  desc: 'Dense tall grass; rapid spread, high flame height' },
+  4:   { name: 'FM4 — Chaparral',              group: 'SH', burnable: true,  desc: 'Tall shrubs 6+ ft; intense fire, high crown potential' },
+  5:   { name: 'FM5 — Low Brush',              group: 'SH', burnable: true,  desc: 'Low green shrubs; moderate spread' },
+  6:   { name: 'FM6 — Dormant Brush',          group: 'SH', burnable: true,  desc: 'Dormant brush/hardwood slash; moderate-high spread' },
+  7:   { name: 'FM7 — Southern Rough',         group: 'SH', burnable: true,  desc: 'Low shrubs with hardwood understory; moderate spread' },
+  8:   { name: 'FM8 — Compact Litter',         group: 'TL', burnable: true,  desc: 'Dense short-needle litter; slow spread, low intensity' },
+  9:   { name: 'FM9 — Hardwood Litter',        group: 'TL', burnable: true,  desc: 'Long-needle or hardwood litter; fast spread when dry' },
+  10:  { name: 'FM10 — Timber/Understory',     group: 'TL', burnable: true,  desc: 'Heavy litter and downed logs; high intensity, crown potential' },
+  11:  { name: 'FM11 — Light Slash',           group: 'SB', burnable: true,  desc: 'Light logging slash; moderate spread' },
+  12:  { name: 'FM12 — Medium Slash',          group: 'SB', burnable: true,  desc: 'Medium logging slash; high intensity' },
+  13:  { name: 'FM13 — Heavy Slash',           group: 'SB', burnable: true,  desc: 'Heavy logging slash; very high intensity' },
+  // GR — Grass
+  101: { name: 'GR1 — Short Sparse Grass',     group: 'GR', burnable: true,  desc: 'Very sparse short dry grass; low spread' },
+  102: { name: 'GR2 — Low Grass',              group: 'GR', burnable: true,  desc: 'Low continuous grass; moderate spread' },
+  103: { name: 'GR3 — Low-Medium Grass',       group: 'GR', burnable: true,  desc: 'Low-medium continuous grass; moderate spread' },
+  104: { name: 'GR4 — Moderate Dry Grass',     group: 'GR', burnable: true,  desc: 'Moderate dry grass; fast spread' },
+  105: { name: 'GR5 — Low Humid Grass',        group: 'GR', burnable: true,  desc: 'Moderate humid climate grass' },
+  106: { name: 'GR6 — Moderate Humid Grass',   group: 'GR', burnable: true,  desc: 'Moderate humid grass; high spread rate' },
+  107: { name: 'GR7 — High Dry Grass',         group: 'GR', burnable: true,  desc: 'Heavy dry grass; very fast spread' },
+  108: { name: 'GR8 — Coarse Dry Grass',       group: 'GR', burnable: true,  desc: 'Very heavy coarse dry grass; extreme spread potential' },
+  109: { name: 'GR9 — High Humid Grass',       group: 'GR', burnable: true,  desc: 'Very heavy humid grass; extreme spread' },
+  // GS — Grass-Shrub
+  121: { name: 'GS1 — Low Dry Grass-Shrub',    group: 'GS', burnable: true,  desc: 'Mixed grass and low shrubs; moderate spread' },
+  122: { name: 'GS2 — Mod Dry Grass-Shrub',    group: 'GS', burnable: true,  desc: 'Mixed grass-shrub; moderate-high spread' },
+  123: { name: 'GS3 — Mod Humid Grass-Shrub',  group: 'GS', burnable: true,  desc: 'Moderate humid grass-shrub mix' },
+  124: { name: 'GS4 — High Humid Grass-Shrub', group: 'GS', burnable: true,  desc: 'Heavy humid grass-shrub; high intensity' },
+  // SH — Shrub
+  141: { name: 'SH1 — Low Dry Shrub',          group: 'SH', burnable: true,  desc: 'Low load dry shrub; moderate spread' },
+  142: { name: 'SH2 — Mod Dry Shrub',          group: 'SH', burnable: true,  desc: 'Moderate dry shrub; moderate spread' },
+  143: { name: 'SH3 — Mod Humid Shrub',        group: 'SH', burnable: true,  desc: 'Dense low humid shrub; moderate spread' },
+  144: { name: 'SH4 — Low Humid Timber-Shrub', group: 'SH', burnable: true,  desc: 'Low humid shrub in timber; moderate spread' },
+  145: { name: 'SH5 — High Dry Shrub',         group: 'SH', burnable: true,  desc: 'Heavy dry shrub; high intensity' },
+  146: { name: 'SH6 — Low Humid Shrub',        group: 'SH', burnable: true,  desc: 'Low humid shrub; moderate intensity' },
+  147: { name: 'SH7 — Very High Dry Shrub',    group: 'SH', burnable: true,  desc: 'Very heavy dry shrub; extreme behavior, crown potential' },
+  148: { name: 'SH8 — High Humid Shrub',       group: 'SH', burnable: true,  desc: 'Heavy humid shrub; high intensity' },
+  149: { name: 'SH9 — Very High Humid Shrub',  group: 'SH', burnable: true,  desc: 'Very heavy humid shrub; high intensity, crown potential' },
+  // TU — Timber-Understory
+  161: { name: 'TU1 — Low Dry Timber-Understory',      group: 'TU', burnable: true, desc: 'Low load timber with grass/shrub understory; moderate spread' },
+  162: { name: 'TU2 — Mod Humid Timber-Shrub',         group: 'TU', burnable: true, desc: 'Moderate humid timber-shrub; moderate spread' },
+  163: { name: 'TU3 — Mod Humid Timber-Grass-Shrub',   group: 'TU', burnable: true, desc: 'Mixed humid timber with grass and shrub; moderate-high spread' },
+  164: { name: 'TU4 — Dwarf Conifer/Understory',       group: 'TU', burnable: true, desc: 'Dwarf conifer with grass understory; crown potential' },
+  165: { name: 'TU5 — High Dry Timber-Shrub',          group: 'TU', burnable: true, desc: 'Heavy dry timber-shrub; high intensity, crown potential' },
+  // TL — Timber Litter
+  181: { name: 'TL1 — Low Compact Conifer Litter',     group: 'TL', burnable: true, desc: 'Compact conifer litter; slow spread, low intensity' },
+  182: { name: 'TL2 — Low Broadleaf Litter',           group: 'TL', burnable: true, desc: 'Broadleaf litter; low-moderate spread' },
+  183: { name: 'TL3 — Mod Conifer Litter',             group: 'TL', burnable: true, desc: 'Moderate conifer litter; low spread' },
+  184: { name: 'TL4 — Small Downed Logs',              group: 'TL', burnable: true, desc: 'Conifer litter with small logs; moderate intensity' },
+  185: { name: 'TL5 — High Conifer Litter',            group: 'TL', burnable: true, desc: 'Heavy conifer litter; moderate spread and intensity' },
+  186: { name: 'TL6 — High Broadleaf Litter',          group: 'TL', burnable: true, desc: 'Heavy broadleaf litter; fast spread when dry' },
+  187: { name: 'TL7 — Large Downed Logs',              group: 'TL', burnable: true, desc: 'Conifer litter with large logs; high intensity' },
+  188: { name: 'TL8 — Long Needle Litter',             group: 'TL', burnable: true, desc: 'Long-needle litter; fast spread, moderate intensity' },
+  189: { name: 'TL9 — Very High Broadleaf Litter',     group: 'TL', burnable: true, desc: 'Very heavy broadleaf litter; fast spread when dry — common EKY hardwoods' },
+  // SB — Slash-Blowdown
+  201: { name: 'SB1 — Low Slash',              group: 'SB', burnable: true,  desc: 'Light logging slash; moderate spread' },
+  202: { name: 'SB2 — Mod Slash',              group: 'SB', burnable: true,  desc: 'Moderate slash; high intensity' },
+  203: { name: 'SB3 — High Slash',             group: 'SB', burnable: true,  desc: 'Heavy slash; very high intensity' },
+  204: { name: 'SB4 — Blowdown',               group: 'SB', burnable: true,  desc: 'Wind-thrown timber; extreme fire behavior' },
+};
 
 const DEFAULT_LAT = 37.129;
 const DEFAULT_LON = -84.083;
