@@ -91,6 +91,9 @@ export function getLocation() {
       // Re-fetch weather for the actual location
       await fetchNWS();
       await fetchForecast();
+
+      // Query LANDFIRE for fuel model at GPS point (READ Option B)
+      fetchFuelModel(state.LAT, state.LON);
     },
     err => {
       DIAG.warn('GEO', `GPS unavailable (${err.message}) — using London KY default`);
