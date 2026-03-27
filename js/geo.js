@@ -3,6 +3,7 @@ import { state, RAWS_STATIONS } from './state.js';
 import { DIAG } from './diag.js';
 import { fetchNWS } from './wx.js';
 import { fetchForecast } from './forecast.js';
+import { fetchFuelModel } from './fuelmodel.js';
 import { changeStation } from './fems.js';
 import { updateUserMarker } from './map.js';
 
