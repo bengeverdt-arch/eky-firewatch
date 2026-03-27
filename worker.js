@@ -152,7 +152,8 @@ const CACHE_TTL = {
   '/fires':      600,   // 10 min
   '/firms':      600,   // 10 min
   '/perimeters': 1800,  // 30 min — perimeters change slowly
-  '/fire-brief': 1800,  // 30 min
+  '/fire-brief':  1800,  // 30 min
+  '/fuel-model':  86400, // 24 hr — LANDFIRE data changes annually at most
 };
 
 // ─────────────────────────────────────────────
