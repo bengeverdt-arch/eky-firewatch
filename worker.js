@@ -186,12 +186,13 @@ export default {
         case '/fires':      response = await handleFires();         break;
         case '/firms':      response = await handleFIRMS();         break;
         case '/perimeters': response = await handlePerimeters();    break;
-        case '/fire-brief': response = await handleFireBrief();     break;
-        case '/health':     response = json({ ok: true, ts: new Date().toISOString(), version: '2.0' }); break;
+        case '/fire-brief':  response = await handleFireBrief();      break;
+        case '/fuel-model':  response = await handleFuelModel(url);  break;
+        case '/health':      response = json({ ok: true, ts: new Date().toISOString(), version: '2.1' }); break;
         default:
           response = json({
-            name: 'EKY Fire Watch API', version: '2.0',
-            endpoints: ['/nws', '/fems', '/forecast', '/alerts', '/fires', '/firms', '/perimeters', '/fire-brief', '/health'],
+            name: 'EKY Fire Watch API', version: '2.1',
+            endpoints: ['/nws', '/fems', '/forecast', '/alerts', '/fires', '/firms', '/perimeters', '/fire-brief', '/fuel-model', '/health'],
           });
       }
     } catch (e) {
