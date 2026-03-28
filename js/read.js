@@ -542,6 +542,8 @@ export function setSlopeRead(pct, btn) {
   slopePct = pct;
   document.querySelectorAll('.slope-btn').forEach(b => b.classList.remove('act'));
   btn.classList.add('act');
+  const note = document.getElementById('slopeAutoNote');
+  if (note) note.style.display = 'none';
   computeRead();
 }
 
