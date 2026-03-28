@@ -35,4 +35,6 @@ export async function fetchFuelModel(lat, lon) {
   name.style.color  = color;
   desc.textContent  = data.desc;
   bar.style.display = 'block';
+
+  computeRead();
 }
