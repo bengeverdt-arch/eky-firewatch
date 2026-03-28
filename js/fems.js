@@ -13,6 +13,7 @@ export async function fetchFEMS() {
   if (!data) { useFMEstimate(); return; }
 
   if (data.header) DIAG.info('FEMS', `CSV columns: ${data.header.join(', ')}`);
+  if (data._debug_obsTimes) DIAG.info('FEMS', `All ObsTimes in CSV (${data._debug_obsTimes.length}): ${data._debug_obsTimes.join(' | ')}`);
 
   state.fm = {
     fm1:    data.fm1hr,
