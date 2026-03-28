@@ -381,6 +381,8 @@ function drawEllipse(calc, iLat, iLon) {
          style="color:#ff4500;text-decoration:none">✕ Remove</a>
     </div>`
   );
+
+  drawSafetyZone(calc.r60.flameLen, iLat, iLon);
 }
 
 // ─── MAP CLICK HANDLER ─────────────────────────────────────────────────────
