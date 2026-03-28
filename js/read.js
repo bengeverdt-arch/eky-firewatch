@@ -400,10 +400,24 @@ function set(id, txt, c) { const e=gel(id); if(!e) return; e.textContent=txt; if
 
 function hideSumBar() { const b=gel('readSumBar'); if(b) b.style.display='none'; }
 
+function showNBPrompt() {
+  const bar = gel('readSumBar');
+  if (!bar) return;
+  bar.style.display = 'block';
+  const nb   = gel('readSumNB');
+  const calc = gel('readSumCalc');
+  if (nb)   nb.style.display   = 'block';
+  if (calc) calc.style.display = 'none';
+}
+
 function updateSumBar(r) {
   const bar = gel('readSumBar');
   if (!bar) return;
   bar.style.display = 'block';
+  const nb   = gel('readSumNB');
+  const calc = gel('readSumCalc');
+  if (nb)   nb.style.display   = 'none';
+  if (calc) calc.style.display = 'block';
   const fl = flameLabel(r.flameLen);
   set('rsSumROS',   `${r.ros.toFixed(0)} ft/min (${r.rosMph.toFixed(2)} mph)`);
   set('rsSumFlame', `${r.flameLen.toFixed(0)} ft`, fl.c);
