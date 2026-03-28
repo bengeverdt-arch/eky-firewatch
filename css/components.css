@@ -284,7 +284,7 @@
 .read-ib-row{display:flex;justify-content:space-between;align-items:center;
   padding:6px 12px;font-family:var(--mono);font-size:10px}
 .read-proj-grid{display:grid;grid-template-columns:1fr 1fr 1fr}
-.read-proj{padding:10px 12px;border-right:1px solid var(--border);
+.read-proj{padding:10px 12px 12px;border-right:1px solid var(--border);
   display:flex;flex-direction:column;gap:3px}
 .read-proj:last-child{border-right:none}
 .rp-lbl{font-family:var(--mono);font-size:8px;letter-spacing:1.5px;
