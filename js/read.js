@@ -332,6 +332,18 @@ function clearEllipse() {
   ellipseLyrs.forEach(l => state.kyMap?.removeLayer(l));
   ellipseLyrs = [];
   if (ignMarker) { state.kyMap?.removeLayer(ignMarker); ignMarker = null; }
+  if (szCircle)  { state.kyMap?.removeLayer(szCircle);  szCircle  = null; }
+}
+
+function drawSafetyZone(flameLenFt, iLat, iLon) {
+  if (szCircle) { state.kyMap?.removeLayer(szCircle); szCircle = null; }
+  if (!state.kyMap || flameLenFt <= 0) return;
+  const r_m = flameLenFt * 4 * 0.3048;
+  szCircle = L.circle([iLat, iLon], {
+    radius: r_m, color:'#00c8ff', weight:1.5, opacity:.7,
+    fillColor:'#00c8ff', fillOpacity:.04, dashArray:'3 5',
+  }).addTo(state.kyMap);
+  szCircle.bindTooltip('Safety Zone (4× FL)', {permanent:false, direction:'top', className:'sz-tip'});
 }
 
 function drawEllipse(calc, iLat, iLon) {
