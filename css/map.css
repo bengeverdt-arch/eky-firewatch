@@ -22,7 +22,7 @@ html.light #mapLegend{background:rgba(255,255,255,.96);border-color:var(--border
 html.light #mapLegend span{color:var(--text)}
 html.light #mapStatus{background:var(--s3);color:var(--muted)}
 /* imagery toggle — floats on the left side of the map */
-#imgToggleWrap{position:absolute;top:12px;left:12px;z-index:500}
+#imgToggleWrap{position:absolute;top:76px;left:12px;z-index:500}
 .img-toggle-btn{font-family:var(--mono);font-size:9px;letter-spacing:1px;
   background:rgba(7,9,11,.82);border:1px solid var(--border2);border-radius:4px;
   color:var(--muted);padding:5px 10px;cursor:pointer;transition:all .2s;white-space:nowrap}
