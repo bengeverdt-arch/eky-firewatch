@@ -81,8 +81,44 @@ const SAV100 = 30;
 const FT_LAT = 1/364000;   // ft to degrees latitude
 const FT_LON = 1/288000;   // ft to degrees longitude at ~37°N
 
+// ─── FUEL MODEL NAMES (for override display) ──────────────────────────────
+const FM_NAMES = {
+  1:'FM1 – Short Grass',2:'FM2 – Timber/Grass Mix',3:'FM3 – Tall Grass',4:'FM4 – Chaparral',
+  5:'FM5 – Brush',6:'FM6 – Dormant Brush',7:'FM7 – Southern Rough',8:'FM8 – Compact Timber Litter',
+  9:'FM9 – Hardwood Litter',10:'FM10 – Timber/Understory',11:'FM11 – Light Slash',
+  12:'FM12 – Medium Slash',13:'FM13 – Heavy Slash',
+  101:'GR1 – Short Sparse Dry Grass',102:'GR2 – Low Load Dry Grass',103:'GR3 – Low Load Coarse Humid Grass',
+  104:'GR4 – Moderate Load Dry Grass',105:'GR5 – Low Load Humid Grass',106:'GR6 – Moderate Load Humid Grass',
+  107:'GR7 – High Load Dry Grass',108:'GR8 – High Load Coarse Humid Grass',109:'GR9 – Very High Load Humid Grass',
+  121:'GS1 – Low Load Dry Grass-Shrub',122:'GS2 – Moderate Load Dry Grass-Shrub',
+  123:'GS3 – Moderate Load Humid Grass-Shrub',124:'GS4 – High Load Humid Grass-Shrub',
+  141:'SH1 – Low Load Dry Shrub',142:'SH2 – Moderate Load Dry Shrub',143:'SH3 – Moderate Load Humid Shrub',
+  144:'SH4 – Low Load Humid Shrub',145:'SH5 – High Load Dry Shrub',146:'SH6 – Low Load Humid Shrub',
+  147:'SH7 – Very High Load Shrub',148:'SH8 – High Load Humid Shrub',149:'SH9 – Very High Load Humid Shrub',
+  161:'TU1 – Low Load Dry Shrub/Grass',162:'TU2 – Moderate Load Humid Shrub/Grass',
+  163:'TU3 – Moderate Load Well Shaded',164:'TU4 – Dwarf Conifer Understory',165:'TU5 – Very High Load',
+  181:'TL1 – Low Load Compact Litter',182:'TL2 – Low Load Broadleaf Litter',
+  183:'TL3 – Moderate Load Broadleaf Litter',184:'TL4 – Small Downed Logs',
+  185:'TL5 – High Load Conifer Litter',186:'TL6 – Moderate Load Broadleaf Litter (mesic)',
+  187:'TL7 – Heavy Load Broadleaf Litter',188:'TL8 – Long-Needle Litter',
+  189:'TL9 – Very High Load Broadleaf Litter',
+  201:'SB1 – Low Load Activity Fuel',202:'SB2 – Moderate Load Activity Fuel',
+  203:'SB3 – High Load Activity Fuel',204:'SB4 – High Load Humid Activity Fuel',
+};
+
+function codeToGroup(c) {
+  if (c >= 201) return 'SB';
+  if (c >= 181) return 'TL';
+  if (c >= 161) return 'TU';
+  if (c >= 141) return 'SH';
+  if (c >= 121) return 'GS';
+  if (c >= 101) return 'GR';
+  return 'TL'; // Original 13 — mostly timber
+}
+
 // ─── MODULE STATE ──────────────────────────────────────────────────────────
 let slopePct   = 0;
+let fuelOverride = null;  // manually selected fuel model, overrides GPS
 let ignPt      = null;   // { lat, lon }
 let ellipseLyrs = [];
 let ignMarker  = null;
