@@ -42,6 +42,7 @@ function scoreStation(s, lat, lon, userElev) {
 export function getLocation() {
   if (!navigator.geolocation) {
     DIAG.warn('GEO', 'Geolocation not supported — using London KY default');
+    fetchFuelModel(state.LAT, state.LON);
     return;
   }
   DIAG.info('GEO', 'Requesting GPS location');
