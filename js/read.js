@@ -372,10 +372,27 @@ function drawEllipse(calc, iLat, iLon) {
 
 }
 
+// ─── AUTO SLOPE FROM TERRAIN ───────────────────────────────────────────────
+async function fetchAutoSlope(lat, lon) {
+  const data = await workerFetch(`/slope?lat=${lat}&lon=${lon}`, 'READ-SLOPE');
+  if (!data) return;
+  DIAG.ok('READ-SLOPE', `${data.slopePct}% raw → ${data.slopeBin}% bin (${data.slopeDeg}°)`);
+  const bins = [0, 10, 20, 30, 40];
+  const idx  = bins.indexOf(data.slopeBin);
+  const btns = document.querySelectorAll('.slope-btn');
+  slopePct = data.slopeBin;
+  btns.forEach(b => b.classList.remove('act'));
+  if (idx >= 0 && btns[idx]) btns[idx].classList.add('act');
+  const note = document.getElementById('slopeAutoNote');
+  if (note) { note.textContent = `~${data.slopePct}% from terrain`; note.style.display = 'block'; }
+  computeRead();
+}
+
 // ─── MAP CLICK HANDLER ─────────────────────────────────────────────────────
 function onMapClick(e) {
   ignPt = { lat: e.latlng.lat, lon: e.latlng.lng };
   DIAG.info('READ', `Ignition: ${ignPt.lat.toFixed(4)}, ${ignPt.lon.toFixed(4)}`);
+  fetchAutoSlope(ignPt.lat, ignPt.lon);
   if (lastCalc) drawEllipse(lastCalc, ignPt.lat, ignPt.lon);
   updatePanel();
 }
