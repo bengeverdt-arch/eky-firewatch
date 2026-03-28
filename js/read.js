@@ -468,7 +468,7 @@ function updateSumBar(r) {
 
 function updatePanel() {
   if (!lastCalc) return;
-  const {r60, g30, g60, g120, fm, wx, fems, dm1, crown, szRadFt, szAreaAc} = lastCalc;
+  const {r60, g30, g60, g120, fm, wx, fems, dm1, crown} = lastCalc;
   const fl = flameLabel(r60.flameLen);
 
   set('rFuelName', fm.name ?? '—');
