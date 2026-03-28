@@ -672,67 +672,73 @@ async function handleFireBrief() {
 // LANDFIRE FBFM40 POINT QUERY (READ Option B)
 // WMS GetFeatureInfo against LANDFIRE GeoServer
 // ─────────────────────────────────────────────
-async function handleFuelModel(url) {
-  const { lat, lon } = getCoords(url);
-
-  // Small bbox centered on point (~200 m buffer at mid-latitudes)
-  const buf  = 0.002;
-  const minx = lon - buf, miny = lat - buf;
-  const maxx = lon + buf, maxy = lat + buf;
-
-  // WMS 1.1.1 GetFeatureInfo - query center pixel of a 5×5 image
-  const wmsUrl =
-    `https://edcintl.cr.usgs.gov/geoserver/landfire/conus_2024/ows` +
+// Fetch a single LANDFIRE WMS layer at a point, return the raw GRAY_INDEX value or null
+async function landfire_query(layer, minx, miny, maxx, maxy) {
+  const u = `https://edcintl.cr.usgs.gov/geoserver/landfire/conus_2024/ows` +
     `?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetFeatureInfo` +
-    `&LAYERS=LF2024_FBFM40_CONUS&QUERY_LAYERS=LF2024_FBFM40_CONUS` +
+    `&LAYERS=${layer}&QUERY_LAYERS=${layer}` +
     `&INFO_FORMAT=application%2Fjson` +
     `&X=2&Y=2&WIDTH=5&HEIGHT=5` +
     `&BBOX=${minx},${miny},${maxx},${maxy}` +
     `&SRS=EPSG%3A4326`;
+  try {
+    const res = await fetch(u);
+    if (!res.ok) return null;
+    const ct = res.headers.get('content-type') || '';
+    if (ct.includes('json')) {
+      const d = await res.json();
+      const v = d?.features?.[0]?.properties?.GRAY_INDEX ?? null;
+      return v != null ? Number(v) : null;
+    } else {
+      const t = await res.text();
+      const m = t.match(/GRAY_INDEX\s*=\s*(\d+)/i);
+      return m ? parseInt(m[1]) : null;
+    }
+  } catch { return null; }
+}
 
-  const res = await fetch(wmsUrl);
-  if (!res.ok) return err('LANDFIRE WMS GetFeatureInfo failed', `HTTP ${res.status}`);
+async function handleFuelModel(url) {
+  const { lat, lon } = getCoords(url);
 
-  let code = null;
-  const ct = res.headers.get('content-type') || '';
+  const buf  = 0.002;
+  const minx = lon - buf, miny = lat - buf;
+  const maxx = lon + buf, maxy = lat + buf;
 
-  if (ct.includes('json')) {
-    const data = await res.json();
-    // GeoServer raster GetFeatureInfo returns GRAY_INDEX for single-band rasters
-    code = data?.features?.[0]?.properties?.GRAY_INDEX
-        ?? data?.features?.[0]?.properties?.FBFM40
-        ?? null;
-  } else {
-    // text/plain fallback: "GRAY_INDEX = 185"
-    const text = await res.text();
-    const m = text.match(/GRAY_INDEX\s*=\s*(\d+)/i)
-           ?? text.match(/FBFM40\s*=\s*(\d+)/i);
-    if (m) code = parseInt(m[1]);
-  }
+  // Fetch FBFM40, CBH, and CBD in parallel
+  const [fbfm40, cbhRaw, cbdRaw] = await Promise.all([
+    landfire_query('LF2024_FBFM40_CONUS', minx, miny, maxx, maxy),
+    landfire_query('LF2024_CBH_CONUS',    minx, miny, maxx, maxy),
+    landfire_query('LF2024_CBD_CONUS',    minx, miny, maxx, maxy),
+  ]);
 
-  if (code == null) {
+  if (fbfm40 == null) {
     return err('No fuel model data returned for this location - may be outside CONUS coverage');
   }
 
-  const fm = FBFM40[code];
+  // CBH: LANDFIRE stores as meters × 10 (e.g. 15 = 1.5 m). 0 = no canopy.
+  const cbh_m     = (cbhRaw != null && cbhRaw > 0) ? cbhRaw * 0.1 : null;
+  // CBD: LANDFIRE stores as kg/m³ × 100 (e.g. 10 = 0.10 kg/m³). 0 = no canopy.
+  const cbd_kgm3  = (cbdRaw != null && cbdRaw > 0) ? cbdRaw * 0.01 : null;
+
+  const fm = FBFM40[fbfm40];
   if (!fm) {
-    // Unknown code - return raw value, don't fail
     return json({
-      lat, lon, code,
-      name:     `FBFM40 Code ${code}`,
-      group:    'UNKNOWN',
-      burnable: true,
-      desc:     'Fuel model code not in lookup table',
-      source:   'LANDFIRE 2024 FBFM40',
+      lat, lon, code: fbfm40,
+      name: `FBFM40 Code ${fbfm40}`, group: 'UNKNOWN', burnable: true,
+      desc: 'Fuel model code not in lookup table',
+      cbh_m, cbd_kgm3,
+      source: 'LANDFIRE 2024',
     });
   }
 
   return json({
-    lat, lon, code,
+    lat, lon, code: fbfm40,
     name:     fm.name,
     group:    fm.group,
     burnable: fm.burnable,
     desc:     fm.desc,
-    source:   'LANDFIRE 2024 FBFM40',
+    cbh_m,
+    cbd_kgm3,
+    source:   'LANDFIRE 2024',
   });
 }
