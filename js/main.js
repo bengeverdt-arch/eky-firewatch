@@ -81,7 +81,11 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 
 // ── Expose functions needed by inline HTML event handlers ──
-window.loadAll        = loadAll;
+window.loadAll           = loadAll;
+window.openRead          = openRead;
+window.closeRead         = closeRead;
+window.setSlopeRead      = setSlopeRead;
+window.clearReadIgnition = clearReadIgnition;
 window.openDiag       = openDiag;
 window.closeDiag      = closeDiag;
 window.copyLog        = copyLog;
