@@ -360,11 +360,14 @@ function disableMapClick() {
 
 // ─── CORE CALCULATION ──────────────────────────────────────────────────────
 export function computeRead() {
-  const fm   = state.fuelModel;
   const wx   = state.wx;
   const fems = state.fm;
 
-  if (!fm?.code || !fm.burnable) { hideSumBar(); return; }
+  // Use manual override if set, otherwise fall back to GPS fuel model
+  const fm = fuelOverride ?? state.fuelModel;
+
+  if (!fm?.code) { hideSumBar(); return; }
+  if (!fm.burnable) { showNBPrompt(); return; }
   const fp = FP[fm.code];
   if (!fp) { DIAG.warn('READ', `No fuel params for code ${fm.code}`); hideSumBar(); return; }
 
