@@ -39,6 +39,79 @@
     <div class="read-section">
       <div class="read-stitle">INPUTS</div>
       <div class="read-row"><span>Fuel Model</span><span id="rFuelName">—</span></div>
+      <div class="read-row read-override-row">
+        <span>Override FM</span>
+        <select id="fmOverride" class="fm-override-select" onchange="setFuelOverride(this.value)">
+          <option value="">GPS Auto</option>
+          <optgroup label="── Timber Litter (TL) — EKY typical ──">
+            <option value="181">TL1 · Low Load Compact Litter</option>
+            <option value="182">TL2 · Low Load Broadleaf Litter</option>
+            <option value="183">TL3 · Moderate Load Broadleaf Litter</option>
+            <option value="184">TL4 · Small Downed Logs</option>
+            <option value="185">TL5 · High Load Conifer Litter</option>
+            <option value="186">TL6 · Mod. Load Broadleaf (mesic)</option>
+            <option value="187">TL7 · Heavy Load Broadleaf Litter</option>
+            <option value="188">TL8 · Long-Needle Litter</option>
+            <option value="189">TL9 · Very High Load Broadleaf</option>
+          </optgroup>
+          <optgroup label="── Timber Understory (TU) ──">
+            <option value="161">TU1 · Low Load Dry Shrub/Grass</option>
+            <option value="162">TU2 · Mod. Load Humid Shrub/Grass</option>
+            <option value="163">TU3 · Mod. Load Well Shaded</option>
+            <option value="164">TU4 · Dwarf Conifer Understory</option>
+            <option value="165">TU5 · Very High Load</option>
+          </optgroup>
+          <optgroup label="── Grass (GR) ──">
+            <option value="101">GR1 · Short Sparse Dry Grass</option>
+            <option value="102">GR2 · Low Load Dry Grass</option>
+            <option value="103">GR3 · Low Load Coarse Humid Grass</option>
+            <option value="104">GR4 · Moderate Load Dry Grass</option>
+            <option value="105">GR5 · Low Load Humid Grass</option>
+            <option value="106">GR6 · Moderate Load Humid Grass</option>
+            <option value="107">GR7 · High Load Dry Grass</option>
+            <option value="108">GR8 · High Load Coarse Humid Grass</option>
+            <option value="109">GR9 · Very High Load Humid Grass</option>
+          </optgroup>
+          <optgroup label="── Grass-Shrub (GS) ──">
+            <option value="121">GS1 · Low Load Dry Grass-Shrub</option>
+            <option value="122">GS2 · Mod. Load Dry Grass-Shrub</option>
+            <option value="123">GS3 · Mod. Load Humid Grass-Shrub</option>
+            <option value="124">GS4 · High Load Humid Grass-Shrub</option>
+          </optgroup>
+          <optgroup label="── Shrub (SH) ──">
+            <option value="141">SH1 · Low Load Dry Shrub</option>
+            <option value="142">SH2 · Moderate Load Dry Shrub</option>
+            <option value="143">SH3 · Mod. Load Humid Shrub</option>
+            <option value="144">SH4 · Low Load Humid Shrub</option>
+            <option value="145">SH5 · High Load Dry Shrub</option>
+            <option value="146">SH6 · Low Load Humid Shrub</option>
+            <option value="147">SH7 · Very High Load Shrub</option>
+            <option value="148">SH8 · High Load Humid Shrub</option>
+            <option value="149">SH9 · Very High Load Humid Shrub</option>
+          </optgroup>
+          <optgroup label="── Slash-Blowdown (SB) ──">
+            <option value="201">SB1 · Low Load Activity Fuel</option>
+            <option value="202">SB2 · Mod. Load Activity Fuel</option>
+            <option value="203">SB3 · High Load Activity Fuel</option>
+            <option value="204">SB4 · High Load Humid Activity Fuel</option>
+          </optgroup>
+          <optgroup label="── Original 13 ──">
+            <option value="1">FM1 · Short Grass</option>
+            <option value="2">FM2 · Timber/Grass Mix</option>
+            <option value="3">FM3 · Tall Grass</option>
+            <option value="4">FM4 · Chaparral</option>
+            <option value="5">FM5 · Brush</option>
+            <option value="6">FM6 · Dormant Brush</option>
+            <option value="7">FM7 · Southern Rough</option>
+            <option value="8">FM8 · Compact Timber Litter</option>
+            <option value="9">FM9 · Hardwood Litter</option>
+            <option value="10">FM10 · Timber/Understory</option>
+            <option value="11">FM11 · Light Slash</option>
+            <option value="12">FM12 · Medium Slash</option>
+            <option value="13">FM13 · Heavy Slash</option>
+          </optgroup>
+        </select>
+      </div>
       <div class="read-row"><span>1-hr Fuel Moisture</span><span id="rFM">—</span></div>
       <div class="read-row"><span>Wind</span><span id="rWind">—</span></div>
       <div class="read-row read-slope-row">
