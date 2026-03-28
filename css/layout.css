@@ -1,3 +1,8 @@
+/* ── READ PUSH ── */
+body{transition:padding-right .3s cubic-bezier(.4,0,.2,1)}
+body.read-open{padding-right:400px}
+@media(max-width:480px){body.read-open{padding-right:0}}
+
 /* ── SPLASH ── */
 #splash{position:fixed;inset:0;z-index:999;background:var(--bg);
   display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;
