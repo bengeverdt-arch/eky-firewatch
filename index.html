@@ -22,6 +22,90 @@
   <div id="spMsg">INITIALIZING...</div>
 </div>
 
+<!-- READ SIDE PANEL -->
+<div id="readPanel">
+  <div class="read-header">
+    <div>
+      <div class="read-title">READ</div>
+      <div class="read-sub">Risk Evaluation &amp; Active Decision-support &nbsp;·&nbsp; Rothermel 1972</div>
+    </div>
+    <button class="read-close" onclick="closeRead()">✕ CLOSE</button>
+  </div>
+  <div class="read-body">
+
+    <div id="rIgnStatus" class="read-ignstatus">Click the map to place ignition point and draw spread ellipse</div>
+
+    <!-- Inputs -->
+    <div class="read-section">
+      <div class="read-stitle">INPUTS</div>
+      <div class="read-row"><span>Fuel Model</span><span id="rFuelName">—</span></div>
+      <div class="read-row"><span>1-hr Fuel Moisture</span><span id="rFM">—</span></div>
+      <div class="read-row"><span>Wind</span><span id="rWind">—</span></div>
+      <div class="read-row read-slope-row">
+        <span>Slope</span>
+        <div class="slope-btns">
+          <button class="slope-btn act" onclick="setSlopeRead(0,this)">0%</button>
+          <button class="slope-btn" onclick="setSlopeRead(10,this)">10%</button>
+          <button class="slope-btn" onclick="setSlopeRead(20,this)">20%</button>
+          <button class="slope-btn" onclick="setSlopeRead(30,this)">30%</button>
+          <button class="slope-btn" onclick="setSlopeRead(40,this)">40%+</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 1-hour behavior -->
+    <div class="read-section">
+      <div class="read-stitle">1-HOUR BEHAVIOR</div>
+      <div class="read-metric-grid">
+        <div class="read-metric">
+          <div class="rm-lbl">RATE OF SPREAD</div>
+          <div class="rm-val" id="rROS">—</div>
+          <div class="rm-sub" id="rROSmph">—</div>
+        </div>
+        <div class="read-metric">
+          <div class="rm-lbl">FLAME LENGTH</div>
+          <div class="rm-val" id="rFlame">—</div>
+          <div class="rm-sub" id="rLabel">—</div>
+        </div>
+      </div>
+      <div class="read-ib-row">
+        <span class="rm-lbl">FIRELINE INTENSITY</span>
+        <span id="rIb" style="font-family:var(--mono);font-size:11px;color:var(--muted)">—</span>
+      </div>
+    </div>
+
+    <!-- Projections -->
+    <div class="read-section">
+      <div class="read-stitle">SPREAD PROJECTIONS</div>
+      <div class="read-proj-grid">
+        <div class="read-proj rp-amber">
+          <div class="rp-lbl">30 MIN</div>
+          <div class="rp-ac" id="rProj30ac">—</div>
+          <div class="rp-ft" id="rProj30ft">— ft head</div>
+        </div>
+        <div class="read-proj rp-orange">
+          <div class="rp-lbl">1 HOUR</div>
+          <div class="rp-ac" id="rProj60ac">—</div>
+          <div class="rp-ft" id="rProj60ft">— ft head</div>
+        </div>
+        <div class="read-proj rp-red">
+          <div class="rp-lbl">2 HOUR</div>
+          <div class="rp-ac" id="rProj120ac">—</div>
+          <div class="rp-ft" id="rProj120ft">— ft head</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Crew briefing -->
+    <div class="read-section">
+      <div class="read-stitle">CREW BRIEFING</div>
+      <pre id="rBriefText" class="read-brief">Awaiting data...</pre>
+    </div>
+
+    <div class="read-disclaimer">Surface fire only &nbsp;·&nbsp; Crown fire not assessed &nbsp;·&nbsp; Verify with FBAN before suppression decisions</div>
+  </div>
+</div>
+
 <!-- FIRE BRIEF PANEL -->
 <div id="briefPanel" class="hidden">
   <div class="briefbox">
