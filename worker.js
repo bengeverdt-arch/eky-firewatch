@@ -551,23 +551,44 @@ async function handleAlerts(url) {
 }
 
 // ─────────────────────────────────────────────
-// NIFC IRWIN - ACTIVE FIRE INCIDENTS
+// NIFC WFIGS - ACTIVE FIRE INCIDENTS
+// Active_Fires required auth (499); using WFIGS
+// Incident Locations YTD (same org, public)
 // ─────────────────────────────────────────────
 async function handleFires() {
-  const bbox = '-89,36,-81,39';
-  const url  = `https://services3.arcgis.com/T4QMspbfLg3qTGWY/arcgis/rest/services/Active_Fires/FeatureServer/0/query?where=1%3D1&outFields=IncidentName,IncidentTypeCategory,PercentContained,DailyAcres,FireBehaviorGeneral,POOState,UniqueFireIdentifier&geometry=${bbox}&geometryType=esriGeometryEnvelope&spatialRel=esriSpatialRelIntersects&outSR=4326&f=geojson`;
+  const bbox = '-89.5,36.4,-81.9,39.1';
+  const url  = `https://services3.arcgis.com/T4QMspbfLg3qTGWY/arcgis/rest/services/WFIGS_Incident_Locations_YearToDate/FeatureServer/0/query?where=1%3D1&outFields=IncidentName,IncidentTypeCategory,PercentContained,IncidentSize,POOState,POOCounty,UniqueFireIdentifier,FireDiscoveryDateTime,FireCause&geometry=${bbox}&geometryType=esriGeometryEnvelope&spatialRel=esriSpatialRelIntersects&inSR=4326&outSR=4326&f=geojson`;
 
   const res = await fetch(url);
-  if (!res.ok) return err('NIFC IRWIN fetch failed', `HTTP ${res.status}`);
+  if (!res.ok) return err('NIFC fires fetch failed', `HTTP ${res.status}`);
   const geojson = await res.json();
-  if (geojson?.error) return err('NIFC IRWIN service error', JSON.stringify(geojson.error));
+  if (geojson?.error) return err('NIFC fires service error', JSON.stringify(geojson.error));
   if (!geojson?.features) return err('NIFC returned invalid GeoJSON', JSON.stringify(geojson).slice(0, 200));
 
+  // Normalize to stable field names used by map.js
+  const features = geojson.features.map(f => {
+    const p = f.properties;
+    return {
+      ...f,
+      properties: {
+        IncidentName:          p.IncidentName || 'Unnamed Incident',
+        IncidentTypeCategory:  p.IncidentTypeCategory || '—',
+        DailyAcres:            p.IncidentSize ?? null,
+        PercentContained:      p.PercentContained ?? null,
+        POOState:              p.POOState || '—',
+        POOCounty:             p.POOCounty || null,
+        UniqueFireIdentifier:  p.UniqueFireIdentifier || null,
+        FireDiscoveryDateTime: p.FireDiscoveryDateTime || null,
+        FireCause:             p.FireCause || null,
+      },
+    };
+  });
+
   return json({
-    count:    geojson.features.length,
-    features: geojson.features,
+    count:    features.length,
+    features,
     type:     'FeatureCollection',
-    source:   'NIFC IRWIN Active Fires',
+    source:   'NIFC WFIGS Incident Locations',
     fetched:  new Date().toISOString(),
   });
 }
