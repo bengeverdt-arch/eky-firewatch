@@ -51,6 +51,7 @@ export async function loadAll() {
   fetchFireBrief(); // non-blocking — don't await, let it load async
 
   recalc();
+  computeRead();
   DIAG.info('MAIN','Load complete');
   if(btn) btn.classList.remove('spin');
   dismissSplash();
