@@ -154,6 +154,7 @@ const CACHE_TTL = {
   '/perimeters': 1800,  // 30 min - perimeters change slowly
   '/fire-brief':  1800,  // 30 min
   '/fuel-model':  86400, // 24 hr - LANDFIRE data changes annually at most
+  '/slope':       3600,  // 1 hr - terrain is static
 };
 
 // ─────────────────────────────────────────────
