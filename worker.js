@@ -576,12 +576,11 @@ async function handleFires() {
 // NASA FIRMS - VIIRS THERMAL HOTSPOTS
 // ─────────────────────────────────────────────
 async function handleFIRMS() {
-  // Filter to last 48 hours — service rejects open-ended queries
-  const cutoff  = new Date(Date.now() - 48 * 3600 * 1000);
-  const dateStr = cutoff.toISOString().slice(0, 10);
-  const where   = encodeURIComponent(`ACQ_DATE >= '${dateStr}'`);
-  const bbox    = '-89.5,36.4,-81.9,39.1';
-  const url     = `https://services9.arcgis.com/RHVPKKiFTONKtxq3/arcgis/rest/services/VIIRS_Thermal_Hotspots_and_Fire_Activity/FeatureServer/0/query?where=${where}&outFields=BRIGHTNESS,FRP,DAYNIGHT,ACQ_DATE,CONFIDENCE&geometry=${bbox}&geometryType=esriGeometryEnvelope&spatialRel=esriSpatialRelIntersects&inSR=4326&outSR=4326&f=geojson`;
+  // Time-enabled ESRI service — use time= epoch parameter (not WHERE clause)
+  const now   = Date.now();
+  const start = now - 48 * 3600 * 1000;
+  const bbox  = '-89.5,36.4,-81.9,39.1';
+  const url   = `https://services9.arcgis.com/RHVPKKiFTONKtxq3/arcgis/rest/services/VIIRS_Thermal_Hotspots_and_Fire_Activity/FeatureServer/0/query?where=1%3D1&time=${start}%2C${now}&outFields=BRIGHTNESS,FRP,DAYNIGHT,ACQ_DATE,CONFIDENCE&geometry=${bbox}&geometryType=esriGeometryEnvelope&spatialRel=esriSpatialRelIntersects&inSR=4326&outSR=4326&f=geojson`;
 
   const res = await fetch(url);
   if (!res.ok) return err('NASA FIRMS fetch failed', `HTTP ${res.status}`);
