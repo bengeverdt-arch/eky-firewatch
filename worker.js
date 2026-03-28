@@ -750,3 +750,39 @@ async function handleFuelModel(url) {
     source:   'LANDFIRE 2024',
   });
 }
+
+// ─────────────────────────────────────────────
+// USGS 3DEP - TERRAIN SLOPE AT POINT
+// Samples elevation at 3 nearby points via EPQS,
+// computes slope from the gradient vector.
+// ─────────────────────────────────────────────
+async function handleSlope(url) {
+  const { lat, lon } = getCoords(url);
+
+  const epqs = (la, lo) =>
+    fetch(`https://epqs.nationalmap.gov/v1/json?x=${lo}&y=${la}&wkid=4326&units=Meters&includeDate=false`)
+      .then(r => r.json())
+      .then(d => parseFloat(d.value));
+
+  // Sample center + ~111 m north + ~111 m east in parallel
+  const δ = 0.001;
+  const [z0, zN, zE] = await Promise.all([
+    epqs(lat,     lon),
+    epqs(lat + δ, lon),
+    epqs(lat,     lon + δ),
+  ]);
+
+  if (isNaN(z0) || isNaN(zN) || isNaN(zE) || z0 < -9999)
+    return err('Elevation query failed — outside 3DEP coverage or EPQS unavailable');
+
+  const dx       = δ * 111320 * Math.cos(lat * Math.PI / 180); // meters east
+  const dy       = δ * 111320;                                  // meters north
+  const rise     = Math.sqrt(((zE - z0) / dx) ** 2 + ((zN - z0) / dy) ** 2);
+  const slopeDeg = +(Math.atan(rise) * 180 / Math.PI).toFixed(1);
+  const slopePct = Math.round(rise * 100);
+
+  const bins     = [0, 10, 20, 30, 40];
+  const slopeBin = bins.reduce((a, b) => Math.abs(b - slopePct) < Math.abs(a - slopePct) ? b : a);
+
+  return json({ lat, lon, slopeDeg, slopePct, slopeBin });
+}
