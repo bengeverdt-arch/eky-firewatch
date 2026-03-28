@@ -211,6 +211,40 @@ function rothermel(fp, dm1, lmH, lmW, windMph, slope, group) {
   return { ros:R, rosMph:R/88, I_b, flameLen:L };
 }
 
+// ─── VAN WAGNER CROWN FIRE MODEL (1977) ───────────────────────────────────
+// Determines surface-to-crown fire transition and active crown fire potential
+function foliageMC() {
+  // Seasonal foliar moisture content estimate for Eastern Kentucky
+  const m = new Date().getMonth() + 1;
+  if (m >= 3 && m <= 5)  return 100; // spring green-up
+  if (m >= 6 && m <= 8)  return 120; // full summer canopy
+  if (m >= 9 && m <= 10) return 85;  // fall drying
+  return 100; // dormant
+}
+
+function crownCheck(I_b, ros, cbh_m, cbd_kgm3) {
+  if (cbh_m == null || cbh_m <= 0) {
+    return { label:'NO CANOPY DATA', sub:'Crown fire not assessed for this location', color:'var(--muted)', level:0 };
+  }
+  const fmc    = foliageMC();
+  const I_b_kW = I_b * 3.459; // BTU/ft/s → kW/m
+  const I_0    = Math.pow(0.01 * cbh_m * (460 + 25.9 * fmc), 1.5);
+  const canInitiate = I_b_kW >= I_0;
+
+  let canActive = false;
+  if (canInitiate && cbd_kgm3 != null && cbd_kgm3 > 0) {
+    const ros_mmin = ros * 0.3048; // ft/min → m/min
+    const R_0      = 3.0 / cbd_kgm3;
+    canActive      = ros_mmin >= R_0;
+  }
+
+  const i0str = `I₀ ${I_0.toFixed(0)} kW/m`;
+  const ibstr = `I_b ${I_b_kW.toFixed(0)} kW/m`;
+  if (canActive)    return { label:'ACTIVE CROWN FIRE',   sub:`${ibstr} ≥ ${i0str} · ROS sustains active spread`,   color:'var(--extreme)', level:3 };
+  if (canInitiate)  return { label:'TORCHING POSSIBLE',   sub:`${ibstr} ≥ ${i0str} · spotty crown entry likely`,    color:'var(--red)',     level:2 };
+  return             { label:'SURFACE FIRE ONLY',         sub:`${ibstr} < ${i0str} · crown entry unlikely`,         color:'var(--green)',   level:1 };
+}
+
 // ─── SPREAD ELLIPSE GEOMETRY (Anderson 1983) ───────────────────────────────
 function ellipseGeom(ros, windMph, minutes) {
   const LB  = Math.max(1.01, 0.936*Math.exp(0.2566*windMph) + 0.461*Math.exp(-0.1548*windMph) - 0.397);
