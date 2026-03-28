@@ -573,13 +573,18 @@ async function handleFires() {
 // NASA FIRMS - VIIRS THERMAL HOTSPOTS
 // ─────────────────────────────────────────────
 async function handleFIRMS() {
-  const bbox = '-89,36,-81,39';
-  const url  = `https://services9.arcgis.com/RHVPKKiFTONKtxq3/arcgis/rest/services/VIIRS_Thermal_Hotspots_and_Fire_Activity/FeatureServer/0/query?where=1%3D1&outFields=BRIGHTNESS,FRP,DAYNIGHT,ACQ_DATE,CONFIDENCE&geometry=${bbox}&geometryType=esriGeometryEnvelope&spatialRel=esriSpatialRelIntersects&outSR=4326&f=geojson`;
+  // Filter to last 48 hours — service rejects open-ended queries
+  const cutoff  = new Date(Date.now() - 48 * 3600 * 1000);
+  const dateStr = cutoff.toISOString().slice(0, 10);
+  const where   = encodeURIComponent(`ACQ_DATE >= '${dateStr}'`);
+  const bbox    = '-89.5,36.4,-81.9,39.1';
+  const url     = `https://services9.arcgis.com/RHVPKKiFTONKtxq3/arcgis/rest/services/VIIRS_Thermal_Hotspots_and_Fire_Activity/FeatureServer/0/query?where=${where}&outFields=BRIGHTNESS,FRP,DAYNIGHT,ACQ_DATE,CONFIDENCE&geometry=${bbox}&geometryType=esriGeometryEnvelope&spatialRel=esriSpatialRelIntersects&inSR=4326&outSR=4326&f=geojson`;
 
   const res = await fetch(url);
   if (!res.ok) return err('NASA FIRMS fetch failed', `HTTP ${res.status}`);
   const geojson = await res.json();
-  if (!geojson?.features) return err('FIRMS returned invalid GeoJSON');
+  if (geojson?.error) return err('NASA FIRMS service error', JSON.stringify(geojson.error));
+  if (!geojson?.features) return err('FIRMS returned invalid GeoJSON', JSON.stringify(geojson).slice(0, 200));
 
   return json({
     count:    geojson.features.length,
