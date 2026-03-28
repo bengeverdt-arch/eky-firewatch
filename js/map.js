@@ -293,10 +293,30 @@ export async function loadFireData() {
 
 // ── Basemap swap for light/dark theme ──
 export function swapBasemap(light) {
-  if (!basemapLayer) return;
+  if (!basemapLayer || imageryOn) return;
   basemapLayer.setUrl(
     light
       ? 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png'
       : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
   );
+}
+
+// ── Imagery toggle ──
+export function toggleImagery(btn) {
+  if (!state.kyMap || !basemapLayer) return;
+  imageryOn = !imageryOn;
+  if (imageryOn) {
+    basemapLayer.setUrl(
+      'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
+    );
+    btn.classList.add('act');
+  } else {
+    const isLight = document.documentElement.classList.contains('light');
+    basemapLayer.setUrl(
+      isLight
+        ? 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png'
+        : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+    );
+    btn.classList.remove('act');
+  }
 }
