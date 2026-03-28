@@ -1,10 +1,10 @@
 :root {
-  --bg:#07090b; --s1:#0d1018; --s2:#121620; --s3:#181d28;
-  --border:#1d2230; --border2:#252c3c;
+  --bg:#0b0e15; --s1:#111620; --s2:#171c2a; --s3:#1d2335;
+  --border:#252d40; --border2:#2e384e;
   --accent:#ff4500; --aglow:rgba(255,69,0,.2);
   --amber:#ffab00; --green:#00e5a0; --yellow:#ffe600;
   --orange:#ff7700; --red:#ff2020; --extreme:#cc00ff;
-  --text:#dde4f0; --muted:#56607a; --muted2:#353d54;
+  --text:#e8edf8; --muted:#8c97b5; --muted2:#5a6480;
   --mono:'Share Tech Mono',monospace;
   --cond:'Barlow Condensed',sans-serif;
   --body:'Barlow',sans-serif;
