@@ -31,9 +31,17 @@ export async function fetchFEMS() {
     useFMEstimate(); return;
   }
 
+  const todayUTC = new Date().toISOString().slice(0, 10);
+  const isStale  = data.obsDate && data.obsDate < todayUTC;
+  const srcLabel = isStale
+    ? `<span style="color:var(--amber);font-weight:600">⚠ FEMS RAWS — YESTERDAY'S DATA</span>`
+    : `<span style="color:var(--green);font-weight:600">✓ LIVE FEMS RAWS DATA</span>`;
+  const staleNote = isStale
+    ? `<br><span style="color:var(--muted2);font-size:0.85em">Today's NFDRS obs posts ~1300 local — using ${data.obsDate} until then</span>`
+    : '';
   document.getElementById('fmSrc').innerHTML =
-    `<span style="color:var(--green);font-weight:600">✓ LIVE FEMS RAWS DATA</span><br>` +
-    `<span style="color:var(--amber)">${data.stationName}</span> · Station ${state.FEMS_STATION} · ${data.obsDate}`;
+    `${srcLabel}<br>` +
+    `<span style="color:var(--amber)">${data.stationName}</span> · Station ${state.FEMS_STATION} · ${data.obsDate}${staleNote}`;
 
   updateFMBars();
 }
