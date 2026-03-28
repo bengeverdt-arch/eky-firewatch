@@ -486,14 +486,21 @@ export function setSlopeRead(pct, btn) {
 export function openRead() {
   const p = gel('readPanel');
   if (p) p.classList.add('open');
+  document.body.classList.add('read-open');
   enableMapClick();
   updatePanel();
+  const map = document.querySelector('.kymap-section');
+  if (map) map.scrollIntoView({behavior:'smooth', block:'start'});
 }
 
 export function closeRead() {
   const p = gel('readPanel');
   if (p) p.classList.remove('open');
+  document.body.classList.remove('read-open');
   disableMapClick();
+  ignPt = null;
+  clearEllipse();
+  updatePanel();
 }
 
 export function clearReadIgnition() {
