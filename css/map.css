@@ -12,8 +12,6 @@
 
 #kyMapDiv{height:500px;background:#0a0c10}
 .leaflet-container{background:#0a0c10!important}
-/* Dark mode tile filter — scoped so LANDFIRE's custom pane is unaffected */
-html:not(.light) .leaflet-tile-pane{filter:brightness(.85) saturate(.5) hue-rotate(190deg)}
 
 /* Light mode map overrides */
 html.light #kyMapDiv{background:#e8ecf2}
