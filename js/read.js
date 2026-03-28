@@ -493,10 +493,6 @@ function updatePanel() {
     set('rCrownSub',   crown.sub);
   }
 
-  // Safety zone
-  set('rSZRadius', szRadFt != null ? `${szRadFt.toFixed(0)} ft radius` : '—');
-  set('rSZArea',   szAreaAc != null ? `${szAreaAc.toFixed(2)} ac` : '—');
-
   const brief = gel('rBriefText');
   if (brief) brief.textContent = buildBriefText(lastCalc);
 
