@@ -21,6 +21,16 @@ html.light .leaflet-container{background:#e8ecf2!important}
 html.light #mapLegend{background:rgba(255,255,255,.96);border-color:var(--border2);color:var(--text)}
 html.light #mapLegend span{color:var(--text)}
 html.light #mapStatus{background:var(--s3);color:var(--muted)}
+/* imagery toggle — floats on the left side of the map */
+#imgToggleWrap{position:absolute;top:12px;left:12px;z-index:500}
+.img-toggle-btn{font-family:var(--mono);font-size:9px;letter-spacing:1px;
+  background:rgba(7,9,11,.82);border:1px solid var(--border2);border-radius:4px;
+  color:var(--muted);padding:5px 10px;cursor:pointer;transition:all .2s;white-space:nowrap}
+.img-toggle-btn:hover{color:var(--text);border-color:var(--border)}
+.img-toggle-btn.act{color:#fff;border-color:rgba(255,255,255,.5);background:rgba(0,0,0,.7)}
+html.light .img-toggle-btn{background:rgba(255,255,255,.9);border-color:var(--border2);color:var(--muted)}
+html.light .img-toggle-btn.act{background:rgba(30,40,60,.85);color:#fff;border-color:rgba(0,0,0,.3)}
+
 #mapLegend{position:absolute;bottom:18px;left:18px;z-index:500;
   background:rgba(7,9,11,.92);border:1px solid var(--border2);border-radius:4px;
   padding:10px 13px;font-family:var(--mono);font-size:10px;color:var(--muted)}
