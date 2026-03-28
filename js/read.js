@@ -460,6 +460,20 @@ function updatePanel() {
   }
 }
 
+// ─── FUEL MODEL OVERRIDE ───────────────────────────────────────────────────
+export function setFuelOverride(val) {
+  if (!val) {
+    fuelOverride = null;
+    DIAG.info('READ', 'Fuel override cleared — using GPS fuel model');
+  } else {
+    const code = parseInt(val);
+    fuelOverride = { code, group: codeToGroup(code), burnable: true,
+                     name: FM_NAMES[code] ?? `Code ${code}`, desc: 'Manual override' };
+    DIAG.info('READ', `Fuel override set: ${fuelOverride.name}`);
+  }
+  computeRead();
+}
+
 // ─── SLOPE SELECTOR ────────────────────────────────────────────────────────
 export function setSlopeRead(pct, btn) {
   slopePct = pct;
