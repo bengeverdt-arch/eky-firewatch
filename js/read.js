@@ -486,7 +486,7 @@ function updateSumBar(r) {
 
 function updatePanel() {
   if (!lastCalc) return;
-  const {r60, g30, g60, g120, fm, wx, fems, dm1} = lastCalc;
+  const {r60, g30, g60, g120, fm, wx, fems, dm1, crown, szRadFt, szAreaAc} = lastCalc;
   const fl = flameLabel(r60.flameLen);
 
   set('rFuelName', fm.name ?? '—');
@@ -504,6 +504,16 @@ function updatePanel() {
   set('rProj60ft',  `${g60.a.toFixed(0)} ft`);
   set('rProj120ac', `${g120.acres.toFixed(1)} ac`);
   set('rProj120ft', `${g120.a.toFixed(0)} ft`);
+
+  // Crown fire
+  if (crown) {
+    set('rCrownLabel', crown.label, crown.color);
+    set('rCrownSub',   crown.sub);
+  }
+
+  // Safety zone
+  set('rSZRadius', szRadFt != null ? `${szRadFt.toFixed(0)} ft radius` : '—');
+  set('rSZArea',   szAreaAc != null ? `${szAreaAc.toFixed(2)} ac` : '—');
 
   const brief = gel('rBriefText');
   if (brief) brief.textContent = buildBriefText(lastCalc);
