@@ -427,11 +427,7 @@ export function computeRead() {
   const cbd_kgm3 = fuelOverride ? null : state.fuelModel?.cbd_kgm3 ?? null;
   const crown    = crownCheck(r.I_b, r.ros, cbh_m, cbd_kgm3);
 
-  // Safety zone: 4× flame length radius (ft)
-  const szRadFt  = r.flameLen * 4;
-  const szAreaAc = (Math.PI * (szRadFt ** 2)) / 43560;
-
-  lastCalc = { r60:r, g30, g60, g120, fm, wx:{...wx}, fems:{...fems}, dm1, windDir, crown, szRadFt, szAreaAc };
+  lastCalc = { r60:r, g30, g60, g120, fm, wx:{...wx}, fems:{...fems}, dm1, windDir, crown };
 
   DIAG.ok('READ', `ROS=${r.ros.toFixed(1)} ft/min  FL=${r.flameLen.toFixed(0)} ft  I_b=${r.I_b.toFixed(0)} BTU/ft/s  Crown:${crown.label}`);
 
