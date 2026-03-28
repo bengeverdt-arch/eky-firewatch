@@ -236,10 +236,10 @@ export async function loadFireData() {
         const p = f.properties;
         layer.bindPopup(`<div style="font-family:monospace;font-size:11px;line-height:1.6">
           <b style="color:#ff8c00">🛰️ VIIRS Thermal Detection</b><br>
-          Brightness: ${p.BRIGHTNESS || '—'} K<br>
-          Fire Power: ${p.FRP || '—'} MW<br>
-          Confidence: ${p.CONFIDENCE || '—'}<br>
-          Date: ${p.ACQ_DATE || '—'}
+          Brightness: ${p.bright_ti4 || '—'} K<br>
+          Fire Power: ${p.frp || '—'} MW<br>
+          Confidence: ${p.confidence || '—'}<br>
+          Date: ${p.acq_date || '—'}
         </div>`);
         fires++;
       },
