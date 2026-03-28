@@ -396,11 +396,14 @@ async function handleFEMS(url) {
     return i >= 0 && row[i] && row[i] !== '' ? parseFloat(row[i]) : null;
   };
 
+  const allObsTimes = dataRows.map(r => r[timeIdx] || '').filter(Boolean);
+
   return json({
     stationName: row[0] || 'Unknown',
     stationId:   station,
     obsDate:     row[1] || '',
     header,
+    _debug_obsTimes: allObsTimes,
     fm1hr:    getV('1HrFM'),
     fm10hr:   getV('10HrFM'),
     fm100hr:  getV('100HrFM'),
