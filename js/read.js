@@ -1,4 +1,4 @@
-// ── READ — Risk Evaluation and Active Decision-support ──
+// ── READ — Rothermel Evaluated Active Decision-support ──
 // Rothermel (1972) surface fire spread + Anderson (1983) spread ellipse
 import { state } from './state.js';
 import { DIAG }  from './diag.js';
