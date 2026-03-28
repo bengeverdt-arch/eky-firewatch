@@ -86,6 +86,7 @@ window.openRead          = openRead;
 window.closeRead         = closeRead;
 window.setSlopeRead      = setSlopeRead;
 window.clearReadIgnition = clearReadIgnition;
+window.setFuelOverride   = setFuelOverride;
 window.openDiag       = openDiag;
 window.closeDiag      = closeDiag;
 window.copyLog        = copyLog;
