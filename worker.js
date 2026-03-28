@@ -368,8 +368,8 @@ async function handleNWS(url) {
 async function handleFEMS(url) {
   const station = url.searchParams.get('station') || '157201';
   const now     = new Date();
-  const end     = now.toISOString().slice(0, 10);
-  const start   = new Date(now - 5 * 86400000).toISOString().slice(0, 10);
+  const end     = new Date(now.getTime() + 86400000).toISOString().slice(0, 10);
+  const start   = new Date(now.getTime() - 5 * 86400000).toISOString().slice(0, 10);
   const apiUrl  = `https://fems.fs2c.usda.gov/api/ext-climatology/download-nfdr-daily-summary/?dataset=observation&startDate=${start}&endDate=${end}&dataFormat=csv&stationIds=${station}&fuelModels=Y`;
 
   const res = await fetch(apiUrl);
