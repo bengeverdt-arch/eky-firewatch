@@ -8,7 +8,7 @@ import { initLeafletMap, loadFireData, toggleMapLayer, swapBasemap } from './map
 import { getLocation } from './geo.js';
 import { recalc } from './calc.js';
 import { fetchFireBrief, openBrief, closeBrief } from './firebrief.js';
-import { computeRead, openRead, closeRead, setSlopeRead, clearReadIgnition } from './read.js';
+import { computeRead, openRead, closeRead, setSlopeRead, clearReadIgnition, setFuelOverride } from './read.js';
 
 // ── Clock ──
 function tick() {
