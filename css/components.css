@@ -313,8 +313,9 @@
   border:1px solid rgba(255,171,0,.25);border-radius:3px;
   color:var(--amber);cursor:pointer;transition:all .2s;white-space:nowrap}
 .readopenbtn:hover{background:rgba(255,171,0,.18);border-color:var(--amber)}
-.fm-override-select{font-family:var(--mono);font-size:10px;background:var(--bg2);
+.fm-override-select{font-family:var(--mono);font-size:10px;background:var(--s3);
   border:1px solid var(--border2);border-radius:3px;color:var(--text);
   padding:3px 6px;max-width:200px;cursor:pointer}
 .fm-override-select:focus{outline:none;border-color:var(--amber)}
-.fm-override-select option,.fm-override-select optgroup{background:var(--bg2);color:var(--text)}
+.fm-override-select option{background:#1a2035;color:#dde4f0}
+html.light .fm-override-select option{background:#e4e9f4;color:#1a2035}
