@@ -98,6 +98,7 @@ export function getLocation() {
     },
     err => {
       DIAG.warn('GEO', `GPS unavailable (${err.message}) — using London KY default`);
+      fetchFuelModel(state.LAT, state.LON);
     },
     { timeout: 10000, maximumAge: 60000 }
   );
