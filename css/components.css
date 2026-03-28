@@ -253,7 +253,7 @@
   padding:8px 12px;background:var(--s2);border:1px solid var(--border);
   border-radius:3px;line-height:1.5;letter-spacing:.4px;transition:color .3s}
 .read-section{background:var(--s2);border:1px solid var(--border);
-  border-radius:4px;overflow:hidden}
+  border-radius:4px;overflow:hidden;flex-shrink:0}
 .read-stitle{font-family:var(--mono);font-size:8px;letter-spacing:2px;
   color:var(--muted);background:var(--s3);border-bottom:1px solid var(--border);
   padding:5px 12px;text-transform:uppercase}
