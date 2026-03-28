@@ -369,7 +369,6 @@ function drawEllipse(calc, iLat, iLon) {
     </div>`
   );
 
-  drawSafetyZone(calc.r60.flameLen, iLat, iLon);
 }
 
 // ─── MAP CLICK HANDLER ─────────────────────────────────────────────────────
