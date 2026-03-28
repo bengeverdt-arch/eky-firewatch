@@ -222,54 +222,58 @@ export async function loadFireData() {
   if (irwinData?.features?.length >= 0) {
     DIAG.ok('MAP-IRWIN', `${irwinData.count} IRWIN incidents`);
     const icon = L.divIcon({
-      html: `<div style="width:14px;height:14px;border-radius:50%;
-        background:#ff2020;border:2px solid #cc0000;
-        box-shadow:0 0 10px rgba(255,32,32,.8)"></div>`,
-      className: '', iconAnchor: [7, 7],
+      html: `<div style="width:9px;height:9px;border-radius:50%;
+        background:#ff2020;border:1.5px solid #cc0000;
+        box-shadow:0 0 6px rgba(255,32,32,.7)"></div>`,
+      className: '', iconAnchor: [4, 4],
     });
-    L.geoJSON({ type: 'FeatureCollection', features: irwinData.features }, {
-      pointToLayer: (_, ll) => L.marker(ll, { icon }),
-      onEachFeature: (f, layer) => {
-        const p = f.properties;
-        layer.bindPopup(`<div style="font-family:monospace;font-size:11px;line-height:1.6">
-          <b style="color:#ff2020">🔥 ${p.IncidentName || 'Unnamed Incident'}</b><br>
-          Type: ${p.IncidentTypeCategory || '—'}<br>
-          Size: ${p.DailyAcres ? p.DailyAcres.toLocaleString() + ' ac' : 'unknown'}<br>
-          Contained: ${p.PercentContained != null ? p.PercentContained + '%' : 'unknown'}<br>
-          State: ${p.POOState || '—'}
-        </div>`);
-        fires++;
-      },
-    }).addTo(irwinGroup);
+    const irwinMarkers = [];
+    irwinData.features.forEach(f => {
+      if (!f.geometry?.coordinates) return;
+      const [lon, lat] = f.geometry.coordinates;
+      const p = f.properties;
+      const m = L.marker([lat, lon], { icon });
+      m.bindPopup(`<div style="font-family:monospace;font-size:11px;line-height:1.6">
+        <b style="color:#ff2020">🔥 ${p.IncidentName || 'Unnamed Incident'}</b><br>
+        Type: ${p.IncidentTypeCategory || '—'}<br>
+        Size: ${p.DailyAcres ? p.DailyAcres.toLocaleString() + ' ac' : 'unknown'}<br>
+        Contained: ${p.PercentContained != null ? p.PercentContained + '%' : 'unknown'}<br>
+        County: ${p.POOCounty || '—'}, ${p.POOState || '—'}
+      </div>`);
+      irwinMarkers.push(m);
+      fires++;
+    });
+    irwinGroup.addLayers(irwinMarkers);
   }
 
   if (firmsData?.features?.length >= 0) {
     DIAG.ok('MAP-FIRMS', `${firmsData.count} VIIRS detections`);
-    L.geoJSON({ type: 'FeatureCollection', features: firmsData.features }, {
-      pointToLayer: (f, ll) => {
-        const frp = f.properties.FRP || f.properties.frp || 0;
-        const sz  = Math.min(18, 8 + frp / 8);
-        return L.marker(ll, {
-          icon: L.divIcon({
-            html: `<div style="width:${sz}px;height:${sz}px;border-radius:50%;
-              background:rgba(255,140,0,.85);border:1px solid #ffaa00;
-              box-shadow:0 0 ${sz}px rgba(255,140,0,.7)"></div>`,
-            className: '', iconAnchor: [sz/2, sz/2],
-          }),
-        });
-      },
-      onEachFeature: (f, layer) => {
-        const p = f.properties;
-        layer.bindPopup(`<div style="font-family:monospace;font-size:11px;line-height:1.6">
-          <b style="color:#ff8c00">🛰️ VIIRS Thermal Detection</b><br>
-          Brightness: ${p.bright_ti4 || '—'} K<br>
-          Fire Power: ${p.frp || '—'} MW<br>
-          Confidence: ${p.confidence || '—'}<br>
-          Date: ${p.acq_date || '—'}
-        </div>`);
-        fires++;
-      },
-    }).addTo(firmsGroup);
+    const firmsMarkers = [];
+    firmsData.features.forEach(f => {
+      if (!f.geometry?.coordinates) return;
+      const [lon, lat] = f.geometry.coordinates;
+      const p = f.properties;
+      const frp = p.frp || 0;
+      const sz  = Math.min(10, 4 + frp / 15);
+      const m = L.marker([lat, lon], {
+        icon: L.divIcon({
+          html: `<div style="width:${sz}px;height:${sz}px;border-radius:50%;
+            background:rgba(255,140,0,.85);border:1px solid #ffaa00;
+            box-shadow:0 0 ${sz}px rgba(255,140,0,.6)"></div>`,
+          className: '', iconAnchor: [sz/2, sz/2],
+        }),
+      });
+      m.bindPopup(`<div style="font-family:monospace;font-size:11px;line-height:1.6">
+        <b style="color:#ff8c00">🛰️ VIIRS Thermal Detection</b><br>
+        Brightness: ${p.bright_ti4 || '—'} K<br>
+        Fire Power: ${p.frp || '—'} MW<br>
+        Confidence: ${p.confidence || '—'}<br>
+        Date: ${p.acq_date || '—'}
+      </div>`);
+      firmsMarkers.push(m);
+      fires++;
+    });
+    firmsGroup.addLayers(firmsMarkers);
   }
 
   if (perimData?.features?.length >= 0) {
