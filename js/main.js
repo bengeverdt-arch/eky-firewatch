@@ -93,6 +93,7 @@ window.copyLog        = copyLog;
 window.setWD          = setWD;
 window.changeStation  = changeStation;
 window.toggleMapLayer = toggleMapLayer;
+window.toggleImagery  = toggleImagery;
 window.openBrief      = openBrief;
 window.closeBrief     = closeBrief;
 window.toggleTheme    = toggleTheme;
