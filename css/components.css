@@ -289,7 +289,7 @@
 .read-proj:last-child{border-right:none}
 .rp-lbl{font-family:var(--mono);font-size:8px;letter-spacing:1.5px;
   color:var(--muted);text-transform:uppercase}
-.rp-ac{font-family:var(--cond);font-size:22px;font-weight:700;line-height:1.15;padding-bottom:1px}
+.rp-ac{font-family:var(--cond);font-size:22px;font-weight:700;line-height:1.2}
 .rp-ft{font-family:var(--mono);font-size:9px;color:var(--muted)}
 .rp-amber .rp-ac{color:var(--amber)}
 .rp-orange .rp-ac{color:var(--orange,#ff6a00)}
