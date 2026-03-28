@@ -558,7 +558,8 @@ async function handleFires() {
   const res = await fetch(url);
   if (!res.ok) return err('NIFC IRWIN fetch failed', `HTTP ${res.status}`);
   const geojson = await res.json();
-  if (!geojson?.features) return err('NIFC returned invalid GeoJSON');
+  if (geojson?.error) return err('NIFC IRWIN service error', JSON.stringify(geojson.error));
+  if (!geojson?.features) return err('NIFC returned invalid GeoJSON', JSON.stringify(geojson).slice(0, 200));
 
   return json({
     count:    geojson.features.length,
