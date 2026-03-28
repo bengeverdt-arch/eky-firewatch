@@ -1,7 +1,8 @@
 // ── READ — Rothermel Evaluated Active Decision-support ──
 // Rothermel (1972) surface fire spread + Anderson (1983) spread ellipse
-import { state } from './state.js';
-import { DIAG }  from './diag.js';
+import { state }       from './state.js';
+import { DIAG }        from './diag.js';
+import { workerFetch } from './api.js';
 
 // ─── FBFM40 FUEL PARAMETERS (Scott & Burgan 2005) ─────────────────────────
 // w = tons/acre | sav = ft²/ft³ | depth = ft | Mx = % dead extinction
