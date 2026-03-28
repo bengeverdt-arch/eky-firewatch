@@ -2,6 +2,7 @@
 import { state } from './state.js';
 import { workerFetch } from './api.js';
 import { DIAG } from './diag.js';
+import { computeRead } from './read.js';
 
 // Group colors match the FBFM40 legend in the map
 const GROUP_COLOR = {
