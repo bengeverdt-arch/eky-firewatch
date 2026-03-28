@@ -381,16 +381,9 @@ async function handleFEMS(url) {
   const lines = csv.trim().split('\n').filter(l => l.trim().length > 0);
   if (lines.length < 2) return err('FEMS CSV has no data rows', `Got ${lines.length} lines`);
 
-  const header  = lines[0].replace(/"/g, '').split(',').map(h => h.trim());
-  const ci      = name => header.findIndex(h => h === name);
-  const timeIdx = ci('ObservationTime');
-  const dataRows = lines.slice(1).map(l => l.replace(/"/g, '').split(','));
-  dataRows.sort((a, b) => {
-    const ta = timeIdx >= 0 ? (a[timeIdx] || '') : '';
-    const tb = timeIdx >= 0 ? (b[timeIdx] || '') : '';
-    return tb.localeCompare(ta); // descending — newest first
-  });
-  const row    = dataRows[0];
+  const header = lines[0].replace(/"/g, '').split(',').map(h => h.trim());
+  const ci     = name => header.findIndex(h => h === name);
+  const row    = lines[lines.length - 1].replace(/"/g, '').split(',');
   const getV   = name => {
     const i = ci(name);
     return i >= 0 && row[i] && row[i] !== '' ? parseFloat(row[i]) : null;
