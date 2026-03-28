@@ -48,8 +48,34 @@ export function initLeafletMap() {
   // Layer groups — each toggleable independently
   perimGroup = L.layerGroup().addTo(state.kyMap);  // perimeters below everything else
   rawsGroup  = L.layerGroup().addTo(state.kyMap);
-  firmsGroup = L.layerGroup().addTo(state.kyMap);
-  irwinGroup = L.layerGroup().addTo(state.kyMap);
+
+  firmsGroup = L.markerClusterGroup({
+    maxClusterRadius: 40,
+    iconCreateFunction: c => {
+      const n = c.getChildCount();
+      return L.divIcon({
+        html: `<div style="background:rgba(200,90,0,.85);color:#fff;border-radius:50%;
+               width:28px;height:28px;display:flex;align-items:center;justify-content:center;
+               font-size:10px;font-weight:700;border:1.5px solid #ffaa00;
+               box-shadow:0 0 8px rgba(255,140,0,.6)">${n}</div>`,
+        className: '', iconSize: [28, 28], iconAnchor: [14, 14],
+      });
+    },
+  }).addTo(state.kyMap);
+
+  irwinGroup = L.markerClusterGroup({
+    maxClusterRadius: 60,
+    iconCreateFunction: c => {
+      const n = c.getChildCount();
+      return L.divIcon({
+        html: `<div style="background:rgba(180,0,0,.9);color:#fff;border-radius:50%;
+               width:28px;height:28px;display:flex;align-items:center;justify-content:center;
+               font-size:10px;font-weight:700;border:1.5px solid #ff4444;
+               box-shadow:0 0 8px rgba(255,32,32,.6)">${n}</div>`,
+        className: '', iconSize: [28, 28], iconAnchor: [14, 14],
+      });
+    },
+  }).addTo(state.kyMap);
 
   // User location marker (starts at default, updates on GPS)
   userMarker = L.marker([state.LAT, state.LON], { icon: makeUserIcon() })
