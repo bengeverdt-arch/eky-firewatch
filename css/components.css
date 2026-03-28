@@ -302,8 +302,6 @@
 .rc-lbl{font-family:var(--mono);font-size:8px;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase}
 .rc-val{font-family:var(--cond);font-size:20px;font-weight:700;line-height:1.2;transition:color .3s}
 .rc-sub{font-family:var(--mono);font-size:9px;color:var(--muted);line-height:1.4}
-.read-sz-note{font-family:var(--mono);font-size:8px;color:var(--muted2);
-  padding:5px 12px 7px;border-top:1px solid var(--border);letter-spacing:.3px}
 .read-disclaimer{font-family:var(--mono);font-size:8px;color:var(--muted2);
   letter-spacing:.4px;text-align:center;padding:2px 0}
 
