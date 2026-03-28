@@ -122,7 +122,6 @@ let fuelOverride = null;  // manually selected fuel model, overrides GPS
 let ignPt      = null;   // { lat, lon }
 let ellipseLyrs = [];
 let ignMarker  = null;
-let szCircle   = null;   // safety zone circle layer
 let mapClickOn = false;
 let lastCalc   = null;   // cached calculation inputs + results
 
