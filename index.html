@@ -292,10 +292,15 @@
           <div style="font-family:var(--mono);font-size:8px;letter-spacing:1.5px;color:var(--muted)">READ — FIRE BEHAVIOR ESTIMATE · ROTHERMEL</div>
           <button class="readopenbtn" onclick="openRead()">OPEN READ →</button>
         </div>
-        <div class="read-sum-grid">
-          <div><div class="rs-lbl">RATE OF SPREAD</div><div class="rs-val" id="rsSumROS">—</div></div>
-          <div><div class="rs-lbl">FLAME LENGTH</div><div class="rs-val" id="rsSumFlame">—</div></div>
-          <div><div class="rs-lbl">CREW ACTION</div><div class="rs-val" id="rsSumLabel">—</div></div>
+        <div id="readSumNB" style="display:none;font-family:var(--mono);font-size:10px;color:var(--muted);padding:2px 0 4px">
+          Non-burnable location — open READ and select a fuel model to run estimate
+        </div>
+        <div id="readSumCalc">
+          <div class="read-sum-grid">
+            <div><div class="rs-lbl">RATE OF SPREAD</div><div class="rs-val" id="rsSumROS">—</div></div>
+            <div><div class="rs-lbl">FLAME LENGTH</div><div class="rs-val" id="rsSumFlame">—</div></div>
+            <div><div class="rs-lbl">CREW ACTION</div><div class="rs-val" id="rsSumLabel">—</div></div>
+          </div>
         </div>
       </div>
     </div>
