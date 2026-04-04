@@ -759,12 +759,22 @@ async function handleFuelModel(url) {
     });
   }
 
+  // Warn when a conifer-labeled TL model is returned for eastern deciduous forest coordinates.
+  // LANDFIRE 2024 frequently misclassifies oak/hickory/maple/beech stands as conifer litter.
+  // Conifer TL codes: TL1 (181), TL3 (183), TL5 (185), TL8 (188)
+  const CONIFER_TL = new Set([181, 183, 185, 188]);
+  const inEasternDeciduous = lat >= 34 && lat <= 44 && lon >= -92 && lon <= -72;
+  const note = (CONIFER_TL.has(fbfm40) && inEasternDeciduous)
+    ? 'LANDFIRE shows conifer litter — eastern hardwood forests (oak, hickory, maple, beech) typically classify as TL2 (low broadleaf) or TL6 (broadleaf litter). Verify locally and consider overriding.'
+    : null;
+
   return json({
     lat, lon, code: fbfm40,
     name:     fm.name,
     group:    fm.group,
     burnable: fm.burnable,
     desc:     fm.desc,
+    note,
     cbh_m,
     cbd_kgm3,
     source:   'LANDFIRE 2024',
