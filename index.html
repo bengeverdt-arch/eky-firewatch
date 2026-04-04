@@ -431,6 +431,14 @@
     <div id="mapStatus">Initializing fire map...</div>
     <div style="position:relative">
       <div id="kyMapDiv"></div>
+      <div id="radarCtrl" style="display:none">
+        <span id="radarKind" class="radar-kind">OBSERVED</span>
+        <span id="radarTime" class="radar-time">--:--</span>
+        <button id="radarPlayBtn" class="radar-btn" onclick="window.toggleRadarPlay()">⏸</button>
+        <button class="radar-btn" onclick="window.stepRadar(-1)">◀</button>
+        <button class="radar-btn" onclick="window.stepRadar(1)">▶</button>
+        <div class="radar-prog-track"><div id="radarProg" class="radar-prog-fill"></div></div>
+      </div>
       <div id="imgToggleWrap">
         <button id="imgToggleBtn" class="img-toggle-btn" onclick="toggleImagery(this)">&#9651; IMAGERY</button>
       </div>
