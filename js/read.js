@@ -390,6 +390,7 @@ async function fetchAutoSlope(lat, lon) {
 
 // ─── MAP CLICK HANDLER ─────────────────────────────────────────────────────
 function onMapClick(e) {
+  if (state.pinMode) return; // defer to pin-drop mode
   ignPt = { lat: e.latlng.lat, lon: e.latlng.lng };
   DIAG.info('READ', `Ignition: ${ignPt.lat.toFixed(4)}, ${ignPt.lon.toFixed(4)}`);
   fetchAutoSlope(ignPt.lat, ignPt.lon);
