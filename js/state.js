@@ -10,6 +10,7 @@ export const state = {
   fuelModel: null, // LANDFIRE FBFM40 at GPS location — populated by fetchFuelModel()
   windDeg: 90,
   kyMap: null,
+  pinMode: false, // true while user is in map pin-drop mode
 };
 
 export const RAWS_STATIONS = [
