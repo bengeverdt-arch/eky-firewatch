@@ -70,7 +70,7 @@ const FBFM40 = {
   164: { name: 'TU4 - Dwarf Conifer/Understory',       group: 'TU', burnable: true, desc: 'Dwarf conifer with grass understory; crown potential' },
   165: { name: 'TU5 - High Dry Timber-Shrub',          group: 'TU', burnable: true, desc: 'Heavy dry timber-shrub; high intensity, crown potential' },
   // TL - Timber Litter
-  181: { name: 'TL1 - Low Compact Conifer Litter',     group: 'TL', burnable: true, desc: 'Compact conifer litter; slow spread, low intensity' },
+  181: { name: 'TL1 - Low Load Compact Timber Litter',  group: 'TL', burnable: true, desc: 'Compact timber litter; slow spread, low intensity' },
   182: { name: 'TL2 - Low Broadleaf Litter',           group: 'TL', burnable: true, desc: 'Broadleaf litter; low-moderate spread' },
   183: { name: 'TL3 - Mod Conifer Litter',             group: 'TL', burnable: true, desc: 'Moderate conifer litter; low spread' },
   184: { name: 'TL4 - Small Downed Logs',              group: 'TL', burnable: true, desc: 'Conifer litter with small logs; moderate intensity' },
