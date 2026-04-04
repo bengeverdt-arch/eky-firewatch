@@ -140,4 +140,6 @@ export async function fetchForecast() {
 
   const trendEl = document.getElementById('fcastTrend');
   trendEl.innerHTML = `<span>TREND ANALYSIS:</span> ${data.trend}`;
+
+  renderFrontNote(buildFrontNote(state.wx, days));
 }
