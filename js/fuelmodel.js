@@ -26,6 +26,7 @@ export async function fetchFuelModel(lat, lon) {
   const code = document.getElementById('fmAtCode');
   const name = document.getElementById('fmAtName');
   const desc = document.getElementById('fmAtDesc');
+  const note = document.getElementById('fmAtNote');
   if (!bar || !code || !name || !desc) return;
 
   const color = GROUP_COLOR[data.group] ?? 'var(--text)';
@@ -34,6 +35,10 @@ export async function fetchFuelModel(lat, lon) {
   name.textContent  = data.name;
   name.style.color  = color;
   desc.textContent  = data.desc;
+  if (note) {
+    note.textContent  = data.note ?? '';
+    note.style.display = data.note ? 'block' : 'none';
+  }
   bar.style.display = 'block';
 
   computeRead();
