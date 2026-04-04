@@ -4,8 +4,8 @@ import { DIAG, openDiag, closeDiag, copyLog, setSplash, dismissSplash } from './
 import { fetchNWS } from './wx.js';
 import { fetchFEMS, changeStation } from './fems.js';
 import { fetchForecast } from './forecast.js';
-import { initLeafletMap, loadFireData, toggleMapLayer, swapBasemap, toggleImagery } from './map.js';
-import { getLocation } from './geo.js';
+import { initLeafletMap, loadFireData, toggleMapLayer, swapBasemap, toggleImagery, enterPinMode, toggleRadarPlay, stepRadar } from './map.js';
+import { getLocation, setManualLocation, clearManualLocation } from './geo.js';
 import { recalc } from './calc.js';
 import { fetchFireBrief, openBrief, closeBrief } from './firebrief.js';
 import { computeRead, openRead, closeRead, setSlopeRead, clearReadIgnition, setFuelOverride } from './read.js';
