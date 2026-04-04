@@ -39,7 +39,58 @@ function scoreStation(s, lat, lon, userElev) {
   return distMi + elevDiff;
 }
 
+// ── Manual location (pin-drop) ──
+
+export async function setManualLocation(lat, lon) {
+  state.LAT = lat;
+  state.LON = lon;
+  state.locationSource = 'manual';
+  localStorage.setItem('fwManualLoc', JSON.stringify({ lat, lon }));
+  DIAG.ok('GEO', `Manual pin: ${lat.toFixed(4)}, ${lon.toFixed(4)}`);
+
+  const locSub = document.getElementById('wxLocSub');
+  if (locSub) locSub.textContent = `${lat.toFixed(3)}°N ${Math.abs(lon).toFixed(3)}°W · Manual`;
+
+  updateUserMarker(lat, lon);
+
+  const userElev = await getUserElevation(lat, lon);
+
+  let best = null, bestScore = Infinity;
+  for (const s of RAWS_STATIONS) {
+    const score = scoreStation(s, lat, lon, userElev);
+    if (score < bestScore) { bestScore = score; best = { ...s }; }
+  }
+  if (best && best.id !== state.FEMS_STATION) {
+    DIAG.ok('GEO', `RAWS auto-select: ${best.name}`);
+    await changeStation(best.id);
+    const sel = document.getElementById('rawsSelect');
+    if (sel) sel.value = best.id;
+  }
+
+  await fetchNWS();
+  await fetchForecast();
+  fetchFuelModel(lat, lon);
+}
+
+export function clearManualLocation() {
+  localStorage.removeItem('fwManualLoc');
+  state.locationSource = 'default';
+  DIAG.info('GEO', 'Manual location cleared — requesting GPS');
+  getLocation();
+}
+
 export function getLocation() {
+  // Use saved manual location if present
+  const saved = localStorage.getItem('fwManualLoc');
+  if (saved) {
+    try {
+      const { lat, lon } = JSON.parse(saved);
+      DIAG.info('GEO', `Restoring saved manual location: ${lat.toFixed(4)}, ${lon.toFixed(4)}`);
+      setManualLocation(lat, lon);
+      return;
+    } catch { localStorage.removeItem('fwManualLoc'); }
+  }
+
   if (!navigator.geolocation) {
     DIAG.warn('GEO', 'Geolocation not supported — using London KY default');
     fetchFuelModel(state.LAT, state.LON);
