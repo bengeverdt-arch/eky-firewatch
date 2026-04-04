@@ -176,6 +176,18 @@ export function updateMapRawsSelection(id) {
 
 // ── Layer toggle (called from HTML onclick) ──
 export function toggleMapLayer(name, btn) {
+  if (name === 'radar') {
+    if (!state.kyMap) return;
+    if (btn.classList.contains('act')) {
+      btn.classList.remove('act');
+      unloadRadar();
+    } else {
+      btn.classList.add('act');
+      loadRadar();
+    }
+    return;
+  }
+
   const layer = name === 'raws'      ? rawsGroup
               : name === 'firms'     ? firmsGroup
               : name === 'fires'     ? irwinGroup
