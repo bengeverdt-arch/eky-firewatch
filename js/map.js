@@ -321,6 +321,116 @@ export async function loadFireData() {
   }
 }
 
+// ── Weather Radar (RainViewer) ──
+let radarFrames  = [];
+let radarLayers  = [];
+let radarTimer   = null;
+let radarIdx     = -1;
+let radarHost    = 'https://tilecache.rainviewer.com';
+
+async function loadRadar() {
+  try {
+    const data = await (await fetch('https://api.rainviewer.com/public/weather-maps.json')).json();
+    radarHost = data.host || radarHost;
+    radarFrames = [
+      ...(data.radar.past    || []).map(f => ({ ...f, kind: 'obs'  })),
+      ...(data.radar.nowcast || []).map(f => ({ ...f, kind: 'fcst' })),
+    ];
+    radarLayers = radarFrames.map(f =>
+      L.tileLayer(`${radarHost}${f.path}/256/{z}/{x}/{y}/6/1_1.png`, {
+        opacity: 0.7, tileSize: 256, zIndex: 310, pane: 'tilePane',
+      })
+    );
+    const ctrl = document.getElementById('radarCtrl');
+    if (ctrl) ctrl.style.display = 'flex';
+    showRadarFrame((data.radar.past?.length ?? 1) - 1);
+    playRadar();
+    DIAG.ok('RADAR', `${radarFrames.length} frames loaded (${data.radar.past?.length} obs + ${data.radar.nowcast?.length} nowcast)`);
+  } catch (e) {
+    DIAG.warn('RADAR', `RainViewer load failed: ${e.message}`);
+  }
+}
+
+function showRadarFrame(idx) {
+  if (radarIdx >= 0 && radarLayers[radarIdx]) state.kyMap.removeLayer(radarLayers[radarIdx]);
+  radarIdx = Math.max(0, Math.min(idx, radarLayers.length - 1));
+  if (radarLayers[radarIdx]) radarLayers[radarIdx].addTo(state.kyMap);
+  updateRadarUI();
+}
+
+function playRadar() {
+  if (radarTimer) clearInterval(radarTimer);
+  radarTimer = setInterval(() => showRadarFrame((radarIdx + 1) % radarFrames.length), 450);
+  const btn = document.getElementById('radarPlayBtn');
+  if (btn) btn.textContent = '⏸';
+}
+
+function pauseRadar() {
+  if (radarTimer) { clearInterval(radarTimer); radarTimer = null; }
+  const btn = document.getElementById('radarPlayBtn');
+  if (btn) btn.textContent = '▶';
+}
+
+function updateRadarUI() {
+  const frame = radarFrames[radarIdx];
+  if (!frame) return;
+  const d = new Date(frame.time * 1000);
+  const timeStr = d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+  const kindEl = document.getElementById('radarKind');
+  if (kindEl) {
+    kindEl.textContent = frame.kind === 'fcst' ? 'NOWCAST' : 'OBSERVED';
+    kindEl.style.color = frame.kind === 'fcst' ? '#a78bfa' : 'var(--muted)';
+  }
+  const timeEl = document.getElementById('radarTime');
+  if (timeEl) timeEl.textContent = timeStr;
+  const prog = document.getElementById('radarProg');
+  if (prog) prog.style.width = `${((radarIdx + 1) / radarFrames.length) * 100}%`;
+}
+
+function unloadRadar() {
+  pauseRadar();
+  radarLayers.forEach(l => { try { state.kyMap.removeLayer(l); } catch {} });
+  radarFrames = []; radarLayers = []; radarIdx = -1;
+  const ctrl = document.getElementById('radarCtrl');
+  if (ctrl) ctrl.style.display = 'none';
+}
+
+export function toggleRadarPlay() {
+  radarTimer ? pauseRadar() : playRadar();
+}
+
+export function stepRadar(dir) {
+  pauseRadar();
+  showRadarFrame(radarIdx + dir);
+}
+
+// ── Map pin-drop mode (manual location) ──
+export function enterPinMode(onDrop) {
+  if (!state.kyMap) return;
+  state.pinMode = true;
+  state.kyMap.getContainer().style.cursor = 'crosshair';
+  const btn = document.getElementById('setPinBtn');
+  if (btn) btn.classList.add('act');
+
+  const cancel = e => {
+    if (e.key === 'Escape') exitPinMode(null, null, onDrop);
+  };
+  document.addEventListener('keydown', cancel, { once: true });
+
+  state.kyMap.once('click', e => {
+    document.removeEventListener('keydown', cancel);
+    exitPinMode(e.latlng.lat, e.latlng.lng, onDrop);
+  });
+}
+
+function exitPinMode(lat, lon, onDrop) {
+  state.pinMode = false;
+  if (state.kyMap) state.kyMap.getContainer().style.cursor = '';
+  const btn = document.getElementById('setPinBtn');
+  if (btn) btn.classList.remove('act');
+  if (lat != null && onDrop) onDrop(lat, lon);
+}
+
 // ── Basemap swap for light/dark theme ──
 export function swapBasemap(light) {
   if (!basemapLayer || imageryOn) return;
