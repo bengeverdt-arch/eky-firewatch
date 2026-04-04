@@ -10,6 +10,20 @@
 .mlayer:hover:not(.act){color:var(--text);border-color:var(--border)}
 .mlayer.act{color:var(--accent);border-color:rgba(255,69,0,.4);background:rgba(255,69,0,.07)}
 
+/* radar animation controls — floats at top-right of map */
+#radarCtrl{position:absolute;top:10px;right:10px;z-index:500;
+  display:flex;align-items:center;gap:6px;
+  background:rgba(7,9,11,.88);border:1px solid var(--border2);border-radius:5px;
+  padding:5px 10px;font-family:var(--mono)}
+.radar-kind{font-size:8px;letter-spacing:1px;color:var(--muted);text-transform:uppercase}
+.radar-time{font-size:11px;color:var(--text);min-width:52px;text-align:center}
+.radar-btn{font-size:11px;color:var(--muted);background:none;border:none;cursor:pointer;
+  padding:1px 3px;transition:color .15s}
+.radar-btn:hover{color:var(--text)}
+.radar-prog-track{width:70px;height:3px;background:var(--border);border-radius:2px;overflow:hidden}
+.radar-prog-fill{height:100%;background:var(--accent);border-radius:2px;transition:width .2s}
+html.light #radarCtrl{background:rgba(255,255,255,.92);border-color:var(--border2)}
+
 #kyMapDiv{height:500px;background:#0a0c10}
 .leaflet-container{background:#0a0c10!important}
 
