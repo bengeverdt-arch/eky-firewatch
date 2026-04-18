@@ -285,7 +285,7 @@ async function handleNWS(url) {
     wind:    obs => nwsSpeed2mph(obs?.windSpeed),
     gust:    obs => nwsSpeed2mph(obs?.windGust),
     dew:     obs => C2F(obs?.dewpoint?.value),
-    precip:  obs => m2in(obs?.precipitationLastHour?.value),
+    precip:  obs => nwsPrecip2in(obs?.precipitationLastHour),
     windDir: obs => obs?.windDirection?.value ?? null,
   };
 
