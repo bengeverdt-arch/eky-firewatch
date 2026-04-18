@@ -131,8 +131,11 @@ function nwsPrecip2in(obs) {
   const v = obs.value;
   if (v == null) return null;
   const unit = obs.unitCode || '';
-  if (unit.includes('mm')) return Math.round(v * 0.0393701 * 100) / 100; // mm → in
-  return Math.round(v * 39.3701 * 100) / 100; // assume m
+  const inches = unit.includes('mm')
+    ? Math.round(v * 0.0393701 * 100) / 100
+    : Math.round(v * 39.3701 * 100) / 100;
+  // >3 in/hr is physically implausible for EKY — treat as bad sensor, skip station
+  return inches > 3 ? null : inches;
 }
 
 // NWS changed wind speed unit from m/s to km/h - handle both
