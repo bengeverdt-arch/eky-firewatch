@@ -125,6 +125,15 @@ function haverDist(lat1, lon1, lat2, lon2) {
 const C2F    = c => c != null ? Math.round(c * 9/5 + 32) : null;
 const kt2mph = k => k != null ? Math.round(k * 1.15078) : null;
 const m2in   = m => m != null ? Math.round(m * 39.3701 * 100) / 100 : null;
+// NWS sometimes reports precipitationLastHour in mm instead of m — handle both
+function nwsPrecip2in(obs) {
+  if (!obs) return null;
+  const v = obs.value;
+  if (v == null) return null;
+  const unit = obs.unitCode || '';
+  if (unit.includes('mm')) return Math.round(v * 0.0393701 * 100) / 100; // mm → in
+  return Math.round(v * 39.3701 * 100) / 100; // assume m
+}
 
 // NWS changed wind speed unit from m/s to km/h - handle both
 function nwsSpeed2mph(obs) {
