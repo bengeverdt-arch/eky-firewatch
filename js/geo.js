@@ -72,6 +72,58 @@ export async function setManualLocation(lat, lon) {
   fetchFuelModel(lat, lon);
 }
 
+export async function searchLocation(evt) {
+  evt.preventDefault();
+  const input = document.getElementById('locSearchInput');
+  const query = input?.value?.trim();
+  if (!query) return;
+
+  const btn = document.querySelector('.loc-search-btn');
+  if (btn) btn.textContent = '…';
+  input.disabled = true;
+
+  try {
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1&addressdetails=1`,
+      { headers: { 'Accept-Language': 'en' } }
+    );
+    const results = await res.json();
+    if (!results.length) {
+      _showSearchError('No results found');
+      return;
+    }
+    const r   = results[0];
+    const lat = parseFloat(r.lat);
+    const lon = parseFloat(r.lon);
+
+    // Build a concise place name from address parts
+    const a = r.address || {};
+    const city  = a.city || a.town || a.village || a.county || r.name || query;
+    const state = a.state_code || a.state || '';
+    const nameEl = document.getElementById('wxLocName');
+    if (nameEl) nameEl.textContent = (city + (state ? `, ${state}` : '')).toUpperCase();
+
+    input.value = '';
+    await setManualLocation(lat, lon);
+  } catch {
+    _showSearchError('Search failed');
+  } finally {
+    if (btn) btn.textContent = '🔍';
+    input.disabled = false;
+    input.blur();
+  }
+}
+
+function _showSearchError(msg) {
+  const form = document.getElementById('locSearchForm');
+  if (!form) return;
+  form.style.position = 'relative';
+  let err = form.querySelector('.loc-search-error');
+  if (!err) { err = document.createElement('div'); err.className = 'loc-search-error'; form.appendChild(err); }
+  err.textContent = msg;
+  setTimeout(() => err.remove(), 3000);
+}
+
 export function clearManualLocation() {
   localStorage.removeItem('fwManualLoc');
   state.locationSource = 'default';

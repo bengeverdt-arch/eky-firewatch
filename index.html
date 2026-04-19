@@ -262,6 +262,10 @@
         <div class="wxlocsub" id="wxLocSub">LAUREL CO · 37.129°N 84.083°W · ~1145 FT</div>
       </div>
       <div class="wxloc-actions">
+        <form id="locSearchForm" onsubmit="window.searchLocation(event)" autocomplete="off">
+          <input id="locSearchInput" type="text" class="loc-search-input" placeholder="Search location…" aria-label="Search location">
+          <button type="submit" class="loc-action-btn loc-search-btn" title="Search">🔍</button>
+        </form>
         <button class="loc-action-btn" onclick="window.useGPS()" title="Use GPS">⊕ GPS</button>
       </div>
     </div>
@@ -421,8 +425,8 @@
       <span class="ptitle">FIRE MAP — EAST KENTUCKY</span>
       <div class="map-controls">
         <button class="mlayer act" id="lyrRaws"  onclick="toggleMapLayer('raws',this)">⬤ RAWS</button>
-        <button class="mlayer act" id="lyrFirms" onclick="toggleMapLayer('firms',this)">⬤ FIRMS</button>
-        <button class="mlayer act" id="lyrFires" onclick="toggleMapLayer('fires',this)">⬤ INCIDENTS</button>
+        <button class="mlayer" id="lyrFirms" onclick="toggleMapLayer('firms',this)">⬤ FIRMS</button>
+        <button class="mlayer" id="lyrFires" onclick="toggleMapLayer('fires',this)">⬤ INCIDENTS</button>
         <button class="mlayer act" id="lyrPerim" onclick="toggleMapLayer('perimeters',this)">⬤ PERIMETERS</button>
         <button class="mlayer"     id="lyrFuel"  onclick="toggleMapLayer('landfire',this)">⬤ FUEL MODEL</button>
         <button class="mlayer"     id="lyrRadar" onclick="toggleMapLayer('radar',this)">⬤ RADAR</button>

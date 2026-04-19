@@ -61,7 +61,7 @@ export function initLeafletMap() {
         className: '', iconSize: [28, 28], iconAnchor: [14, 14],
       });
     },
-  }).addTo(state.kyMap);
+  }); // off by default
 
   irwinGroup = L.markerClusterGroup({
     maxClusterRadius: 60,
@@ -75,7 +75,7 @@ export function initLeafletMap() {
         className: '', iconSize: [28, 28], iconAnchor: [14, 14],
       });
     },
-  }).addTo(state.kyMap);
+  }); // off by default
 
   // User location marker (starts at default, updates on GPS)
   userMarker = L.marker([state.LAT, state.LON], { icon: makeUserIcon() })

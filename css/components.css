@@ -22,11 +22,20 @@
   display:flex;align-items:center;justify-content:space-between}
 .wxlocname{font-family:var(--cond);font-size:17px;font-weight:700;letter-spacing:2px}
 .wxlocsub{font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:1px;margin-top:1px}
-.wxloc-actions{display:flex;gap:5px;flex-shrink:0}
+.wxloc-actions{display:flex;align-items:center;gap:5px;flex-shrink:0}
 .loc-action-btn{font-family:var(--mono);font-size:9px;letter-spacing:1px;text-transform:uppercase;
   color:var(--muted);background:var(--s2);border:1px solid var(--border2);border-radius:12px;
   padding:3px 9px;cursor:pointer;transition:all .2s;white-space:nowrap}
 .loc-action-btn:hover{color:var(--text);border-color:var(--border)}
+#locSearchForm{display:flex;align-items:center;gap:3px}
+.loc-search-input{font-family:var(--mono);font-size:9px;letter-spacing:.5px;
+  color:var(--text);background:var(--s2);border:1px solid var(--border2);border-radius:12px;
+  padding:3px 9px;width:130px;outline:none;transition:width .25s,border-color .2s}
+.loc-search-input::placeholder{color:var(--muted2,var(--muted))}
+.loc-search-input:focus{border-color:var(--accent,#ff4500);width:170px}
+.loc-search-btn{padding:3px 7px;border-radius:12px;font-size:10px;letter-spacing:0}
+.loc-search-error{font-family:var(--mono);font-size:9px;color:var(--red,#ff4444);
+  position:absolute;bottom:-16px;right:0;white-space:nowrap}
 .wxgrid{padding:13px 14px;display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .wxcard{background:var(--s2);border:1px solid var(--border);border-radius:4px;
   padding:10px 12px;display:flex;flex-direction:column;gap:2px;

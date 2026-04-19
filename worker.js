@@ -381,7 +381,7 @@ async function handleFEMS(url) {
   const station = url.searchParams.get('station') || '157201';
   const now     = new Date();
   const end     = new Date(now.getTime() + 86400000).toISOString().slice(0, 10);
-  const start   = new Date(now.getTime() - 5 * 86400000).toISOString().slice(0, 10);
+  const start   = new Date(now.getTime() - 14 * 86400000).toISOString().slice(0, 10);
   const apiUrl  = `https://fems.fs2c.usda.gov/api/ext-climatology/download-nfdr-daily-summary/?dataset=observation&startDate=${start}&endDate=${end}&dataFormat=csv&stationIds=${station}&fuelModels=Y`;
 
   const res = await fetch(apiUrl);
@@ -395,16 +395,35 @@ async function handleFEMS(url) {
 
   const header = lines[0].replace(/"/g, '').split(',').map(h => h.trim());
   const ci     = name => header.findIndex(h => h === name);
-  const row    = lines[lines.length - 1].replace(/"/g, '').split(',');
-  const getV   = name => {
-    const i = ci(name);
-    return i >= 0 && row[i] && row[i] !== '' ? parseFloat(row[i]) : null;
+
+  // Scan rows newest→oldest — pick first with any valid numeric data
+  let row = null;
+  for (let i = lines.length - 1; i >= 1; i--) {
+    const candidate = lines[i].replace(/"/g, '').split(',');
+    const hasData = ['1HrFM', '10HrFM', 'ERC', 'KBDI'].some(col => {
+      const idx = ci(col);
+      if (idx < 0) return false;
+      const v = candidate[idx]?.trim();
+      return v && v !== '' && !isNaN(parseFloat(v));
+    });
+    if (hasData) { row = candidate; break; }
+  }
+
+  if (!row) return err('FEMS no valid data rows', `${lines.length - 1} rows checked, all empty`);
+
+  const getV = name => {
+    const idx = ci(name);
+    if (idx < 0) return null;
+    const v = row[idx]?.trim();
+    if (!v || v === '') return null;
+    const n = parseFloat(v);
+    return isNaN(n) ? null : n;
   };
 
   return json({
-    stationName: row[0] || 'Unknown',
+    stationName: row[0]?.trim() || 'Unknown',
     stationId:   station,
-    obsDate:     row[1] || '',
+    obsDate:     row[1]?.trim() || '',
     header,
     fm1hr:    getV('1HrFM'),
     fm10hr:   getV('10HrFM'),
@@ -415,7 +434,7 @@ async function handleFEMS(url) {
     kbdi:     getV('KBDI'),
     ic:       getV('IC'),
     sc:       getV('SC'),
-    fuelModel: row[ci('FuelModel')] || null,
+    fuelModel: row[ci('FuelModel')]?.trim() || null,
   });
 }
 
