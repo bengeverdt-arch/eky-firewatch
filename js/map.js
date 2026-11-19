@@ -18,16 +18,14 @@ export function initLeafletMap() {
   state.kyMap = L.map('kyMapDiv', { center: [37.4, -83.8], zoom: 7 });
   setTimeout(() => state.kyMap.invalidateSize(), 500);
 
-  const isLight = document.documentElement.classList.contains('light');
-  basemapLayer = L.tileLayer(
-    isLight
-      ? 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png'
-      : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-    {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/">CARTO</a>',
-      subdomains: 'abcd', maxZoom: 20,
-    }
-  ).addTo(state.kyMap);
+  // Reference (roads/labels) pane — above LANDFIRE (250) so labels stay readable,
+  // below vector overlays (400). Non-interactive so clicks reach the map.
+  state.kyMap.createPane('refPane');
+  state.kyMap.getPane('refPane').style.zIndex = 260;
+  state.kyMap.getPane('refPane').style.pointerEvents = 'none';
+
+  basemapLayer = L.layerGroup().addTo(state.kyMap);
+  setBasemap(document.documentElement.classList.contains('light') ? 'light' : 'dark');
 
   // LANDFIRE fuel model WMS — custom pane (z-index 250) keeps it above the
   // basemap but below all vector overlays, AND outside the tile pane CSS filter
