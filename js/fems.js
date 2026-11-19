@@ -10,7 +10,10 @@ export async function fetchFEMS() {
   DIAG.info('FEMS', `Calling Worker /fems endpoint (station ${state.FEMS_STATION})`);
 
   const data = await workerFetch(`/fems?station=${state.FEMS_STATION}`, 'FEMS');
-  if (!data) { useFMEstimate(); return; }
+  if (!data) { setFemsForecast(null); useFMEstimate(); return; }
+
+  setFemsForecast(data.forecast, data.stationName);
+  if (data.forecast?.length) DIAG.ok('FEMS', `${data.forecast.length} days of FEMS predicted NFDRS`);
 
   if (data.header) DIAG.info('FEMS', `CSV columns: ${data.header.join(', ')}`);
 
