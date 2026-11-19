@@ -31,8 +31,6 @@ const TERMS = [
     def:'NFDRS estimate of forward rate of spread (ft/min) for the station\'s reference fuel model.' },
   { key:'KBDI',   sec:'Fire Danger Indices', term:'KBDI — Keetch-Byram Drought Index',
     def:'Soil and duff dryness on a 0–800 scale (0 = saturated, 800 = maximum drought). Above 400: fire burns into the ground and holds heat after suppression. Above 600: deep burning, extended mop-up, stump holes.' },
-  { key:'FWI',    sec:'Fire Danger Indices', term:'FWI — Fosberg Fire Weather Index',
-    def:'A 0–100 index from temperature, RH, and wind only — no fuel data. This dashboard uses a simplified version for the danger rating. Treat as a weather-driven indicator, not an official NFDRS rating.' },
 
   // ── Weather ──
   { key:'RH',     sec:'Weather', term:'RH — Relative Humidity',

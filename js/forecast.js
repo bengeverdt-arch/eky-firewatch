@@ -2,7 +2,7 @@
 import { state } from './state.js';
 import { workerFetch } from './api.js';
 import { setSplash } from './diag.js';
-import { c_F } from './calc.js';
+import { idxColor } from './calc.js';
 
 // ── Front detection ──
 // Cardinal/intercardinal directions → degrees
@@ -107,6 +107,8 @@ export function setFemsForecast(rows, station) {
   if (lastDays) renderCards(lastDays);
 }
 
+export function rerenderForecast() { if (lastDays) renderCards(lastDays); }
+
 export async function fetchForecast() {
   setSplash('FETCHING 5-DAY FORECAST...', 60);
   const data = await workerFetch(`/forecast?lat=${state.LAT}&lon=${state.LON}`, 'FCST');
@@ -173,8 +175,8 @@ function renderCards(days) {
             <div class="fcast-fems-lbl" data-term="FEMS">FEMS PREDICTED</div>
             ${femsRow('1-hr FM',  '1HR',  fx.fm1,  '%', c_fm(fx.fm1))}
             ${femsRow('10-hr FM', '10HR', fx.fm10, '%', c_fm(fx.fm10))}
-            ${femsRow('ERC', 'ERC', fx.erc != null ? Math.round(fx.erc) : null, '', c_F(fx.erc))}
-            ${femsRow('BI',  'BI',  fx.bi  != null ? Math.round(fx.bi)  : null, '', c_F(fx.bi))}
+            ${femsRow('ERC', 'ERC', fx.erc != null ? Math.round(fx.erc) : null, '', idxColor('erc', fx.erc))}
+            ${femsRow('BI',  'BI',  fx.bi  != null ? Math.round(fx.bi)  : null, '', idxColor('bi', fx.bi))}
           </div>`;
         })()}
         <div class="fcastshort">${d.shortFcast||''}</div>

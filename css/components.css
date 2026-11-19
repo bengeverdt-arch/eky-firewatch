@@ -80,29 +80,30 @@
 .dangp{}
 .dangbody{padding:15px 17px;display:flex;flex-direction:column;gap:13px}
 .dangmain{display:flex;align-items:flex-start;justify-content:space-between;gap:14px}
-.drating{font-family:var(--cond);font-size:52px;font-weight:800;
-  letter-spacing:4px;line-height:1;transition:color .5s,text-shadow .5s}
-.dlbl{font-family:var(--mono);font-size:9px;letter-spacing:2px;color:var(--muted);
-  text-transform:uppercase;margin-bottom:3px}
-.dfwi{font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:4px;letter-spacing:1px}
-.dsummary{font-family:var(--mono);font-size:10px;color:var(--muted);
-  letter-spacing:.4px;text-align:right;line-height:1.6;max-width:270px}
-.dbarwrap{display:flex;flex-direction:column;gap:4px}
-.dbartrack{height:9px;background:var(--border2);border-radius:5px;overflow:hidden;position:relative}
-.dbarfill{height:100%;border-radius:5px;
-  transition:width .7s cubic-bezier(.4,0,.2,1),background .5s;position:relative}
-.dbarfill::after{content:'';position:absolute;right:0;top:0;bottom:0;
-  width:3px;background:rgba(255,255,255,.3);border-radius:0 5px 5px 0}
-.dbarlbls{display:flex;justify-content:space-between;
-  font-family:var(--mono);font-size:8px;color:var(--muted);letter-spacing:.5px}
-.dbarlbls span.act{color:var(--text);font-weight:700}
-.factgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
-.fcard{background:var(--s2);border:1px solid var(--border);
-  border-top:2px solid var(--fc,var(--border2));
-  border-radius:4px;padding:10px 12px;display:flex;flex-direction:column;gap:3px}
-.fcname{font-family:var(--mono);font-size:9px;letter-spacing:1px;color:var(--muted);text-transform:uppercase}
-.fcval{font-family:var(--cond);font-size:25px;font-weight:700;line-height:1;transition:color .3s}
-.fcdesc{font-family:var(--mono);font-size:9px;color:var(--muted)}
+.dintro{font-size:11px;color:var(--muted);line-height:1.5}
+.idxcard{background:var(--s2);border:1px solid var(--border);border-radius:4px;
+  padding:10px 12px;display:flex;flex-direction:column;gap:6px}
+.idxhead{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+.idxname{font-family:var(--mono);font-size:10px;letter-spacing:1px;color:var(--muted);text-transform:uppercase}
+.idxval{font-family:var(--cond);font-size:30px;font-weight:700;line-height:1;transition:color .3s}
+.idxwhat{font-size:11px;color:var(--muted);line-height:1.45}
+.idxtrack{position:relative;height:8px;background:var(--border2);border-radius:4px;margin-top:2px}
+.idxtypical{position:absolute;left:25%;width:50%;top:0;bottom:0;background:var(--border);opacity:.9}
+.idxmark{display:none;position:absolute;top:-4px;width:6px;height:16px;margin-left:-3px;
+  border-radius:3px;border:1px solid var(--bg);transition:left .6s}
+.idxscale{display:flex;justify-content:space-between;font-family:var(--mono);font-size:7px;
+  letter-spacing:.8px;color:var(--muted2)}
+.idxcmp{font-size:12px;color:var(--text);line-height:1.5}
+.idxnote{font-size:10px;color:var(--muted);line-height:1.4}
+.rfcheck{border:1px solid var(--border);border-radius:4px;padding:9px 12px;display:flex;flex-direction:column;gap:5px}
+.rfhead{font-family:var(--mono);font-size:8px;letter-spacing:1.5px;color:var(--muted)}
+.rfrow{display:grid;grid-template-columns:16px 1fr auto;gap:8px;align-items:center;font-size:12px;color:var(--muted)}
+.rfmark{font-family:var(--mono);font-weight:700;text-align:center}
+.rfval{font-family:var(--mono);font-size:11px}
+.rfrow.met{color:var(--red)}
+.rfrow.met .rflbl{color:var(--text)}
+.rfsum{font-size:11px;color:var(--muted);line-height:1.5;border-top:1px solid var(--border);padding-top:6px;margin-top:2px}
+.rfsum b{color:var(--text)}
 
 /* ── FORECAST PANEL ── */
 .fcastp{}

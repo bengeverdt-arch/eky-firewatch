@@ -190,35 +190,32 @@
     </div>
   </div>
 
-  <!-- DANGER PANEL -->
+  <!-- DANGER PANEL — official indices + context, no invented rating -->
   <div class="panel dangp">
-    <div class="ph"><span class="ptitle">FIRE DANGER INDEX</span><span class="pbadge" data-term="FWI">FOSBERG FWI + NFDRS</span></div>
+    <div class="ph"><span class="ptitle">FIRE DANGER INDICES</span><span class="pbadge" data-term="NFDRS">NFDRS · FEMS</span></div>
     <div class="dangbody">
-      <div class="dangmain">
-        <div>
-          <div class="dlbl">Current Rating</div>
-          <div class="drating" id="dRating">—</div>
-          <div class="dfwi" id="dFWI">FWI: —</div>
-        </div>
-        <div class="dsummary" id="dSummary">Loading live data...</div>
+      <div class="dintro" id="dIntro">Official NFDRS values from the selected RAWS, compared with the same time of year in past seasons.</div>
+      <div class="idxcard">
+        <div class="idxhead"><span class="idxname" data-term="ERC">Energy Release (ERC)</span><span class="idxval" id="ercVal">—</span></div>
+        <div class="idxwhat">How dry the fuels have gotten over the past few weeks, and how much heat they would give off if they burned. Changes slowly; wind does not affect it.</div>
+        <div class="idxtrack"><div class="idxtypical"></div><div class="idxmark" id="ercMark"></div></div>
+        <div class="idxscale"><span>LOWER THAN USUAL</span><span>TYPICAL</span><span>HIGHER THAN USUAL</span></div>
+        <div class="idxcmp" id="ercCmp">Loading station history…</div>
       </div>
-      <div class="dbarwrap">
-        <div class="dbartrack"><div class="dbarfill" id="dBar" style="width:0%;background:var(--green)"></div></div>
-        <div class="dbarlbls">
-          <span id="dl0">LOW</span><span id="dl1">MODERATE</span>
-          <span id="dl2">HIGH</span><span id="dl3">V.HIGH</span><span id="dl4">EXTREME</span>
-        </div>
+      <div class="idxcard">
+        <div class="idxhead"><span class="idxname" data-term="BI">Burning Index (BI)</span><span class="idxval" id="biVal">—</span></div>
+        <div class="idxwhat">How hard a fire would be to control today. Combines how fast it spreads with how hot it burns, so it moves with daily wind and humidity.</div>
+        <div class="idxtrack"><div class="idxtypical"></div><div class="idxmark" id="biMark"></div></div>
+        <div class="idxscale"><span>LOWER THAN USUAL</span><span>TYPICAL</span><span>HIGHER THAN USUAL</span></div>
+        <div class="idxcmp" id="biCmp">Loading station history…</div>
+        <div class="idxnote" id="biFlame"></div>
       </div>
-      <div class="factgrid">
-        <div class="fcard" id="fc2"><span class="fcname" data-term="ERC">Energy Release</span><span class="fcval" id="fv2">—</span><span class="fcdesc">ERC from RAWS</span></div>
-        <div class="fcard" id="fc3"><span class="fcname" data-term="BI">Burning Index</span><span class="fcval" id="fv3">—</span><span class="fcdesc">BI from RAWS</span></div>
-      </div>
-      <div id="fuelModelBar" style="display:none;padding:10px 16px 12px;border-top:1px solid var(--border)">
-        <div style="font-family:var(--mono);font-size:8px;letter-spacing:1.5px;color:var(--muted);margin-bottom:4px">FUEL MODEL AT YOUR LOCATION · LANDFIRE 2024</div>
-        <div id="fmAtCode" style="font-family:var(--mono);font-size:10px;letter-spacing:1px;margin-bottom:2px">—</div>
-        <div id="fmAtName" style="font-family:var(--mono);font-size:12px;font-weight:700;margin-bottom:3px">—</div>
-        <div id="fmAtDesc" style="font-size:11px;color:var(--muted);line-height:1.4">—</div>
-        <div id="fmAtNote" style="display:none;font-size:10px;color:#ffab00;line-height:1.5;margin-top:6px;padding-top:6px;border-top:1px solid rgba(255,171,0,.2)"></div>
+      <div class="rfcheck">
+        <div class="rfhead">RED FLAG CRITERIA · NWS JACKSON · CURRENT READINGS</div>
+        <div class="rfrow" id="rf10"><span class="rfmark">?</span><span class="rflbl">10-hr fuels at 8% or drier</span><span class="rfval">—</span></div>
+        <div class="rfrow" id="rfRH"><span class="rfmark">?</span><span class="rflbl">Humidity at 25% or lower</span><span class="rfval">—</span></div>
+        <div class="rfrow" id="rfWind"><span class="rfmark">?</span><span class="rflbl">Sustained wind 15 mph or more</span><span class="rfval">—</span></div>
+        <div class="rfsum" id="rfSum"></div>
       </div>
     </div>
   </div>

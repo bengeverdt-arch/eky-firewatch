@@ -2,7 +2,8 @@
 import { state, RAWS_STATIONS } from './state.js';
 import { workerFetch } from './api.js';
 import { DIAG, setSplash } from './diag.js';
-import { recalc, c_F } from './calc.js';
+import { recalc, idxColor } from './calc.js';
+import { rerenderForecast } from './forecast.js';
 import { updateMapRawsSelection } from './map.js';
 import { setFemsForecast } from './forecast.js';
 
@@ -10,6 +11,26 @@ function prevDay(ymd) {
   const d = new Date(ymd + 'T12:00:00');
   d.setDate(d.getDate() - 1);
   return d.toLocaleDateString('en-CA');
+}
+
+const titleCase = s => s ? s.toLowerCase().replace(/\b\w/g, c => c.toUpperCase()) : null;
+
+// 20-yr station history around today's date (worker caches 24 hr)
+async function fetchClim(station) {
+  const now  = new Date();
+  const date = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+  if (state.clim?.station === station && state.clim?.date === date && !state.clim.failed) return;
+  state.clim = { station, date, data: null };
+  const data = await workerFetch(`/fems-clim?station=${station}&date=${date}`, 'FEMS-CLIM');
+  if (state.clim.station !== station) return; // user switched stations meanwhile
+  if (data?.erc?.length) {
+    state.clim.data = data;
+    DIAG.ok('FEMS-CLIM', `${data.erc.length} days of history ${data.firstYear}–${data.lastYear}`);
+  } else {
+    state.clim.failed = true;
+  }
+  updateFMBars();
+  rerenderForecast();
 }
 
 export async function fetchFEMS() {
@@ -32,7 +53,10 @@ export async function fetchFEMS() {
     erc:    data.erc,
     bi:     data.bi,
     kbdi:   data.kbdi,
+    station: titleCase(data.stationName),
+    obsDate: data.obsDate,
   };
+  fetchClim(state.FEMS_STATION); // non-blocking — fills in the ERC/BI comparison
 
   DIAG.ok('FEMS', `station="${data.stationName}" date="${data.obsDate}" 1hr=${state.fm.fm1} 10hr=${state.fm.fm10} 100hr=${state.fm.fm100} ERC=${state.fm.erc} BI=${state.fm.bi} KBDI=${state.fm.kbdi}`);
 
@@ -67,7 +91,7 @@ export async function changeStation(id) {
   state.FEMS_STATION = id;
   const station = RAWS_STATIONS.find(s => s.id === id);
   DIAG.info('RAWS', `Station changed to ${station?.name} (${id})`);
-  state.fm = {fm1:null,fm10:null,fm100:null,fm1000:null,erc:null,bi:null,kbdi:null};
+  state.fm = {fm1:null,fm10:null,fm100:null,fm1000:null,erc:null,bi:null,kbdi:null,station:null,obsDate:null};
   updateFMBars();
   // Sync map markers and dropdown
   updateMapRawsSelection(id);
@@ -112,11 +136,11 @@ export function updateFMBars() {
   });
   if(fm.erc!=null){
     document.getElementById('fmERC').textContent=fm.erc.toFixed(0);
-    document.getElementById('fmERC').style.color=c_F(fm.erc);
+    document.getElementById('fmERC').style.color=idxColor('erc',fm.erc);
   }
   if(fm.bi!=null){
     document.getElementById('fmBI').textContent=fm.bi.toFixed(0);
-    document.getElementById('fmBI').style.color=c_F(fm.bi);
+    document.getElementById('fmBI').style.color=idxColor('bi',fm.bi);
   }
   if(fm.kbdi!=null){
     document.getElementById('fmKBDI').textContent=fm.kbdi.toFixed(0);

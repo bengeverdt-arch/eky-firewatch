@@ -6,7 +6,6 @@ import { fetchFEMS, changeStation } from './fems.js';
 import { fetchForecast } from './forecast.js';
 import { initLeafletMap, loadFireData, toggleMapLayer, swapBasemap, toggleImagery, enterPinMode, toggleRadarPlay, stepRadar } from './map.js';
 import { resolveLocation, setManualLocation, clearManualLocation } from './geo.js';
-import { fetchFuelModel } from './fuelmodel.js';
 import { recalc } from './calc.js';
 import { fetchFireBrief, openBrief, closeBrief } from './firebrief.js';
 import { openGlossary, closeGlossary, initGlossary } from './glossary.js';
@@ -34,7 +33,6 @@ export async function loadAll() {
     // Resolve location FIRST so every fetch below uses the right coordinates/RAWS
     setSplash('LOCATING...', 5);
     await resolveLocation();
-    fetchFuelModel(state.LAT, state.LON); // non-blocking
 
     setSplash('FETCHING NWS WEATHER...', 10);
     await fetchNWS();

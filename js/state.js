@@ -7,7 +7,7 @@ export const state = {
   FEMS_STATION: '157201',
   wx: { temp: null, rh: null, wind: null, gust: null, dew: null, precip: null, windDirDeg: null },
   fm: { fm1: null, fm10: null, fm100: null, fm1000: null, erc: null, bi: null, kbdi: null },
-  fuelModel: null, // LANDFIRE FBFM40 at GPS location — populated by fetchFuelModel()
+  clim: null, // { station, date, data } — 20-yr ERC/BI history from /fems-clim
   kyMap: null,
   pinMode: false, // true while user is in map pin-drop mode
   located: false, // true after first resolveLocation() — gates RAWS auto-select
