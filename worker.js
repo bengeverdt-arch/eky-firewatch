@@ -719,18 +719,53 @@ async function handlePerimeters() {
 
 // ─────────────────────────────────────────────
 // NWS FWF - FIRE WEATHER FORECAST TEXT PRODUCT
-// Louisville NWS office (LMK) covers Eastern KY
+// Office + fire weather zone come from the NWS points lookup for the
+// requested location (SE KY / London → JKL, zone KYZ080). The product is
+// filtered to headline + discussion, the zone group covering that location,
+// and the days 3-7 outlook.
 // ─────────────────────────────────────────────
-async function handleFireBrief() {
+
+// Expand a UGC header like "KYZ068-069-080-084>088-114-116-192115-" into zone IDs
+function parseUGC(ugc) {
+  const zones = new Set();
+  let prefix = '';
+  const addRange = (a, b) => {
+    for (let i = +a; i <= (b ? +b : +a); i++) zones.add(prefix + String(i).padStart(3, '0'));
+  };
+  for (const tok of ugc.replace(/\s+/g, '').split('-')) {
+    let m = tok.match(/^([A-Z]{2}[ZC])(\d{3})(?:>(\d{3}))?$/);
+    if (m) { prefix = m[1]; addRange(m[2], m[3]); continue; }
+    m = tok.match(/^(\d{3})(?:>(\d{3}))?$/);
+    if (m && prefix) addRange(m[1], m[2]);
+    // 6-digit expiration timestamp falls through — ignored
+  }
+  return zones;
+}
+
+async function handleFireBrief(url) {
+  const { lat, lon } = getCoords(url);
+
+  let office = 'JKL', zone = 'KYZ080'; // London / Laurel Co defaults
+  try {
+    const ptRes = await fetch(`https://api.weather.gov/points/${lat},${lon}`,
+      { headers: { 'User-Agent': NWS_UA } });
+    if (ptRes.ok) {
+      const p = (await ptRes.json())?.properties;
+      if (p?.cwa) office = p.cwa;
+      const fz = (p?.fireWeatherZone || '').split('/').pop();
+      if (fz) zone = fz;
+    }
+  } catch (_) { /* keep defaults */ }
+
   const listRes = await fetch(
-    'https://api.weather.gov/products/types/FWF/locations/LMK',
+    `https://api.weather.gov/products/types/FWF/locations/${office}`,
     { headers: { 'User-Agent': NWS_UA } }
   );
   if (!listRes.ok) return err('FWF product list failed', `HTTP ${listRes.status}`);
   const listData = await listRes.json();
 
   const productId = listData?.['@graph']?.[0]?.id;
-  if (!productId) return err('No FWF products found for LMK office');
+  if (!productId) return err(`No FWF products found for ${office} office`);
 
   const prodRes = await fetch(
     `https://api.weather.gov/products/${productId}`,
@@ -738,12 +773,47 @@ async function handleFireBrief() {
   );
   if (!prodRes.ok) return err('FWF product fetch failed', `HTTP ${prodRes.status}`);
   const prodData = await prodRes.json();
+  const fullText = prodData.productText || '';
+
+  // Split into $$-delimited segments; zone segments start with a UGC header
+  const UGC_RE = /^([A-Z]{2}[ZC]\d{3}[0-9A-Z>\-\n]*?\d{6}-)[ \t]*$/m;
+  const chunks = fullText.split(/^\$\$[ \t]*$/m);
+  let intro = '', zoneSeg = null, zoneAreas = null, extended = '';
+
+  chunks.forEach((chunk, i) => {
+    const m = chunk.match(UGC_RE);
+    if (!m) {
+      if (i === 0) intro = chunk;
+      else if (/FORECAST FOR DAYS|EXTENDED/i.test(chunk)) extended = chunk;
+      return;
+    }
+    if (i === 0) intro = chunk.slice(0, m.index);
+    if (!zoneSeg && parseUGC(m[1]).has(zone)) {
+      zoneSeg   = chunk.slice(m.index + m[0].length);
+      // First non-blank line after UGC = county list ("Rockcastle-Jackson-Laurel-...")
+      const areaLines = [];
+      for (const l of zoneSeg.split('\n').map(s => s.trim())) {
+        if (!l) { if (areaLines.length) break; continue; }
+        if (/^Including/i.test(l)) break;
+        areaLines.push(l);
+      }
+      zoneAreas = areaLines.join('').replace(/-$/, '').split('-').join(', ');
+    }
+  });
+
+  const filtered = zoneSeg != null;
+  const text = filtered
+    ? [intro.trim(), zoneSeg.trim(), extended.trim()].filter(Boolean).join('\n\n')
+    : fullText;
 
   return json({
     issuedAt:  prodData.issuanceTime,
     office:    prodData.issuingOffice,
     productId,
-    text:      prodData.productText,
+    zone,
+    zoneAreas,
+    filtered,
+    text,
   });
 }
 
