@@ -1,17 +1,17 @@
 /**
- * EKY Fire Watch - Cloudflare Worker Backend  v2.0
+ * EKY Fire Watch - Cloudflare Worker Backend  v2.2
  * =================================================
  * DEPLOY: Paste into Cloudflare Workers dashboard and Save & Deploy.
  *
  * ENDPOINTS:
  *  GET /nws?lat=&lon=      → Multi-station composite weather (NWS + METAR fallback)
- *  GET /fems?station=      → Dead fuel moisture + NFDRS from RAWS
+ *  GET /fems?station=      → Dead fuel moisture + NFDRS from RAWS (latest obs + FEMS forecast)
  *  GET /forecast?lat=&lon= → NWS 5-day fire weather forecast
  *  GET /alerts?lat=&lon=   → Active NWS fire weather alerts
  *  GET /fires              → Active fire incidents (NIFC IRWIN)
  *  GET /firms              → NASA FIRMS VIIRS thermal hotspots
  *  GET /perimeters         → Fire perimeters year-to-date (NIFC WFIGS)
- *  GET /fire-brief         → NWS FWF text product (Louisville/LMK office)
+ *  GET /fire-brief?lat= *  GET /fire-brief         → NWS FWF text product (Louisville/LMK office)lon= → NWS FWF text product, filtered to the location's fire wx zone
  *  GET /fuel-model?lat=&lon= → LANDFIRE FBFM40 fuel model at GPS point (READ Option B)
  *  GET /health               → Health check
  */
@@ -199,13 +199,13 @@ export default {
         case '/fires':      response = await handleFires();         break;
         case '/firms':      response = await handleFIRMS();         break;
         case '/perimeters': response = await handlePerimeters();    break;
-        case '/fire-brief':  response = await handleFireBrief();      break;
+        case '/fire-brief':  response = await handleFireBrief(url);   break;
         case '/fuel-model':  response = await handleFuelModel(url);  break;
         case '/slope':       response = await handleSlope(url);       break;
-        case '/health':      response = json({ ok: true, ts: new Date().toISOString(), version: '2.1' }); break;
+        case '/health':      response = json({ ok: true, ts: new Date().toISOString(), version: '2.2' }); break;
         default:
           response = json({
-            name: 'EKY Fire Watch API', version: '2.1',
+            name: 'EKY Fire Watch API', version: '2.2',
             endpoints: ['/nws', '/fems', '/forecast', '/alerts', '/fires', '/firms', '/perimeters', '/fire-brief', '/fuel-model', '/slope', '/health'],
           });
       }
