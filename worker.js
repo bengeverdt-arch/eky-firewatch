@@ -11,8 +11,9 @@
  *  GET /fires              → Active fire incidents (NIFC IRWIN)
  *  GET /firms              → NASA FIRMS VIIRS thermal hotspots
  *  GET /perimeters         → Fire perimeters year-to-date (NIFC WFIGS)
- *  GET /fire-brief?lat= *  GET /fire-brief         → NWS FWF text product (Louisville/LMK office)lon= → NWS FWF text product, filtered to the location's fire wx zone
+ *  GET /fire-brief?lat=&lon= → NWS FWF text product, filtered to the location's fire wx zone
  *  GET /fuel-model?lat=&lon= → LANDFIRE FBFM40 fuel model at GPS point (READ Option B)
+ *  GET /slope?lat=&lon=      → USGS 3DEP terrain slope at point
  *  GET /health               → Health check
  */
 
