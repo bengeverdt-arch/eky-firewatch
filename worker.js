@@ -399,31 +399,49 @@ async function handleFEMS(url) {
   const header = lines[0].replace(/"/g, '').split(',').map(h => h.trim());
   const ci     = name => header.findIndex(h => h === name);
 
-  // Scan rows newest→oldest — pick first with any valid numeric data
-  let row = null;
-  for (let i = lines.length - 1; i >= 1; i--) {
-    const candidate = lines[i].replace(/"/g, '').split(',');
-    const hasData = ['1HrFM', '10HrFM', 'ERC', 'KBDI'].some(col => {
-      const idx = ci(col);
-      if (idx < 0) return false;
-      const v = candidate[idx]?.trim();
-      return v && v !== '' && !isNaN(parseFloat(v));
-    });
-    if (hasData) { row = candidate; break; }
-  }
+  const rows    = lines.slice(1).map(l => l.replace(/"/g, '').split(','));
+  const typeIdx = ci('NFDRType');
+  const typeOf  = r => (typeIdx >= 0 ? r[typeIdx]?.trim() : '') || '';
 
-  if (!row) return err('FEMS no valid data rows', `${lines.length - 1} rows checked, all empty`);
-
-  const getV = name => {
+  const numAt = (r, name) => {
     const idx = ci(name);
     if (idx < 0) return null;
-    const v = row[idx]?.trim();
+    const v = r[idx]?.trim();
     if (!v || v === '') return null;
     const n = parseFloat(v);
     return isNaN(n) ? null : n;
   };
+  const hasData = r => ['1HrFM', '10HrFM', 'ERC', 'KBDI'].some(col => numAt(r, col) != null);
+
+  // Latest observed row with data (forecast rows are excluded so "current" stays measured)
+  let row = null;
+  for (let i = rows.length - 1; i >= 0; i--) {
+    if (typeOf(rows[i]) !== 'F' && hasData(rows[i])) { row = rows[i]; break; }
+  }
+
+  if (!row) return err('FEMS no valid data rows', `${rows.length} rows checked, all empty`);
+
+  const getV = name => numAt(row, name);
+
+  // FEMS-predicted NFDRS values (from NWS gridded forecast run through NFDRS)
+  const r1 = v => v != null ? Math.round(v * 10) / 10 : null;
+  const forecast = rows
+    .filter(r => typeOf(r) === 'F' && hasData(r))
+    .map(r => ({
+      date:   r[1]?.trim() || '',
+      fm1:    r1(numAt(r, '1HrFM')),
+      fm10:   r1(numAt(r, '10HrFM')),
+      fm100:  r1(numAt(r, '100HrFM')),
+      fm1000: r1(numAt(r, '1000HrFM')),
+      erc:    r1(numAt(r, 'ERC')),
+      bi:     r1(numAt(r, 'BI')),
+      ic:     r1(numAt(r, 'IC')),
+      sc:     r1(numAt(r, 'SC')),
+      kbdi:   numAt(r, 'KBDI'),
+    }));
 
   return json({
+    forecast,
     stationName: row[0]?.trim() || 'Unknown',
     stationId:   station,
     obsDate:     row[1]?.trim() || '',
