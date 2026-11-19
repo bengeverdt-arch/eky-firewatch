@@ -100,9 +100,9 @@ export async function resolveLocation() {
 
   updateUserMarker(state.LAT, state.LON);
 
-  const moved = !state._located || src !== prev.src ||
+  const moved = !state.located || src !== prev.src ||
     haverMi(prev.lat, prev.lon, state.LAT, state.LON) > 0.5;
-  state._located = true;
+  state.located = true;
   if (moved) await selectRaws();
 }
 

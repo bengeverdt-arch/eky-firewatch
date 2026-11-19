@@ -11,6 +11,7 @@ export const state = {
   windDeg: 90,
   kyMap: null,
   pinMode: false, // true while user is in map pin-drop mode
+  located: false, // true after first resolveLocation() — gates RAWS auto-select
 };
 
 export const RAWS_STATIONS = [

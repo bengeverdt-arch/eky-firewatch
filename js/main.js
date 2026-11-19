@@ -5,7 +5,8 @@ import { fetchNWS } from './wx.js';
 import { fetchFEMS, changeStation } from './fems.js';
 import { fetchForecast } from './forecast.js';
 import { initLeafletMap, loadFireData, toggleMapLayer, swapBasemap, toggleImagery, enterPinMode, toggleRadarPlay, stepRadar } from './map.js';
-import { getLocation, setManualLocation, clearManualLocation } from './geo.js';
+import { resolveLocation, setManualLocation, clearManualLocation } from './geo.js';
+import { fetchFuelModel } from './fuelmodel.js';
 import { recalc } from './calc.js';
 import { fetchFireBrief, openBrief, closeBrief } from './firebrief.js';
 import { openGlossary, closeGlossary, initGlossary } from './glossary.js';
@@ -29,33 +30,46 @@ function setWD(btn, deg) {
 }
 
 // ── Main data load ──
+let loading = false;
 export async function loadAll() {
-  getLocation();
+  if (loading) return; // refresh button / timer / pin-drop can overlap
+  loading = true;
   const btn = document.getElementById('refBtn');
   if(btn) btn.classList.add('spin');
   DIAG.info('MAIN', `Load started at ${new Date().toISOString()}`);
   DIAG.info('MAIN', `User agent: ${navigator.userAgent.substring(0,80)}`);
 
-  setSplash('FETCHING NWS WEATHER...', 10);
-  await fetchNWS();
+  try {
+    // Resolve location FIRST so every fetch below uses the right coordinates/RAWS
+    setSplash('LOCATING...', 5);
+    await resolveLocation();
+    fetchFuelModel(state.LAT, state.LON); // non-blocking — calls computeRead() when it lands
 
-  setSplash('FETCHING FEMS RAWS DATA...', 40);
-  await fetchFEMS();
+    setSplash('FETCHING NWS WEATHER...', 10);
+    await fetchNWS();
 
-  setSplash('FETCHING 5-DAY FORECAST...', 60);
-  await fetchForecast();
+    setSplash('FETCHING FEMS RAWS DATA...', 40);
+    await fetchFEMS();
 
-  setSplash('LOADING FIRE MAP...', 80);
-  if(state.kyMap) await loadFireData();
+    setSplash('FETCHING 5-DAY FORECAST...', 60);
+    await fetchForecast();
 
-  setSplash('LOADING FIRE BRIEF...', 92);
-  fetchFireBrief(); // non-blocking — don't await, let it load async
+    setSplash('LOADING FIRE MAP...', 80);
+    if(state.kyMap) await loadFireData();
 
-  recalc();
-  computeRead();
-  DIAG.info('MAIN','Load complete');
-  if(btn) btn.classList.remove('spin');
-  dismissSplash();
+    setSplash('LOADING FIRE BRIEF...', 92);
+    fetchFireBrief(); // non-blocking — don't await, let it load async
+
+    recalc();
+    computeRead();
+    DIAG.info('MAIN','Load complete');
+  } catch (e) {
+    DIAG.err('MAIN', 'Load failed', e.message);
+  } finally {
+    if(btn) btn.classList.remove('spin');
+    loading = false;
+    dismissSplash();
+  }
 }
 
 // ── Theme toggle ──
@@ -96,8 +110,8 @@ window.setWD          = setWD;
 window.changeStation  = changeStation;
 window.toggleMapLayer       = toggleMapLayer;
 window.toggleImagery        = toggleImagery;
-window.enterPinMode         = () => enterPinMode(setManualLocation);
-window.useGPS               = clearManualLocation;
+window.enterPinMode         = () => enterPinMode((lat, lon) => { setManualLocation(lat, lon); loadAll(); });
+window.useGPS               = () => { clearManualLocation(); loadAll(); };
 window.toggleRadarPlay      = toggleRadarPlay;
 window.stepRadar            = stepRadar;
 window.openBrief      = openBrief;
