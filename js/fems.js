@@ -53,6 +53,9 @@ export async function fetchFEMS() {
       (todayFx?.fm1 != null ? ` FEMS predicts today's 1-hr at <b style="color:var(--text)">${todayFx.fm1}%</b>, ERC ${Math.round(todayFx.erc)}.` : '') +
       `</span>`
     : '';
+  const hRaws = document.getElementById('hRaws');
+  if (hRaws) hRaws.textContent = data.stationName || state.FEMS_STATION;
+
   document.getElementById('fmSrc').innerHTML =
     `${srcLabel}<br>` +
     `<span style="color:var(--amber)">${data.stationName}</span> · Station ${state.FEMS_STATION} · ${data.obsDate}${staleNote}`;

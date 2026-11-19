@@ -25,7 +25,6 @@ export async function fetchNWS() {
 
   document.getElementById('stName').textContent =
     `${data.station?.name || '—'} (${data.station?.id || '—'})`;
-  document.getElementById('hRaws').textContent = data.station?.id || '—';
   // Location heading describes WHERE the data is for, not which station reported it
   const srcLbl = { gps:'GPS', manual:'Manual' }[state.locationSource] || 'Default';
   document.getElementById('wxLocName').textContent =
@@ -55,7 +54,6 @@ export function setWxFallback() {
   DIAG.warn('NWS','Weather data unavailable — cards blanked');
   state.wx = {temp:null,rh:null,wind:null,gust:null,dew:null,precip:null,windDirDeg:null};
   document.getElementById('stName').textContent='NWS unavailable — no current observations';
-  document.getElementById('hRaws').textContent='OFFLINE';
   updateWxCards();
 }
 
