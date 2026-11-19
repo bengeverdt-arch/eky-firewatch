@@ -91,6 +91,19 @@ function renderFrontNote(note) {
   el.style.display = 'block';
 }
 
+// ── FEMS predicted NFDRS values (set by fems.js) ──
+// Merged into the NWS forecast cards by date. Either fetch can land first,
+// so both paths re-render the cards.
+let lastDays     = null;
+let femsForecast = null; // { byDate: Map(date → row), station }
+
+export function setFemsForecast(rows, station) {
+  femsForecast = rows?.length
+    ? { byDate: new Map(rows.map(r => [r.date, r])), station }
+    : null;
+  if (lastDays) renderCards(lastDays);
+}
+
 export async function fetchForecast() {
   setSplash('FETCHING 5-DAY FORECAST...', 60);
   const data = await workerFetch(`/forecast?lat=${state.LAT}&lon=${state.LON}`, 'FCST');
@@ -99,11 +112,27 @@ export async function fetchForecast() {
     return;
   }
 
-  const days = data.days;
+  lastDays = data.days;
+  renderCards(lastDays);
+
+  const trendEl = document.getElementById('fcastTrend');
+  trendEl.innerHTML = `<span>TREND ANALYSIS:</span> ${data.trend}`;
+
+  renderFrontNote(buildFrontNote(state.wx, lastDays));
+}
+
+function renderCards(days) {
   const dow  = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 
   const c_rh   = v => v==null?'var(--muted)':v<35?'var(--red)':v<50?'var(--yellow)':'var(--green)';
   const c_wind = v => v==null?'var(--muted)':v>25?'var(--red)':v>15?'var(--yellow)':'var(--text)';
+  // Same thresholds as the dead fuel moisture bars
+  const c_fm   = v => v==null?'var(--muted)':v<8?'var(--red)':v<12?'var(--orange)':v<18?'var(--yellow)':'var(--green)';
+  const femsRow = (lbl, val, unit, color) => `
+        <div class="fcastrow">
+          <span class="fcastlbl">${lbl}</span>
+          <div><span class="fcastval" style="color:${color}">${val ?? '—'}</span><span class="fcastunit">${unit}</span></div>
+        </div>`;
   const top_color = d => {
     if(d.rh!=null && d.rh<35)   return 'var(--red)';
     if(d.wind!=null && d.wind>25) return 'var(--red)';
