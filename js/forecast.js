@@ -163,12 +163,26 @@ function renderCards(days) {
           <span class="fcastlbl">Precip</span>
           <div><span class="fcastval" style="color:var(--text)">${d.precip??'—'}</span><span class="fcastunit">%</span></div>
         </div>
+        ${(() => {
+          const fx = femsForecast?.byDate.get(d.date);
+          if (!fx) return '';
+          return `<div class="fcast-fems">
+            <div class="fcast-fems-lbl">FEMS PREDICTED</div>
+            ${femsRow('1-hr FM',  fx.fm1,  '%', c_fm(fx.fm1))}
+            ${femsRow('10-hr FM', fx.fm10, '%', c_fm(fx.fm10))}
+            ${femsRow('ERC', fx.erc != null ? Math.round(fx.erc) : null, '', c_F(fx.erc))}
+            ${femsRow('BI',  fx.bi  != null ? Math.round(fx.bi)  : null, '', c_F(fx.bi))}
+          </div>`;
+        })()}
         <div class="fcastshort">${d.shortFcast||''}</div>
       </div>`;
   }).join('');
 
-  const trendEl = document.getElementById('fcastTrend');
-  trendEl.innerHTML = `<span>TREND ANALYSIS:</span> ${data.trend}`;
-
-  renderFrontNote(buildFrontNote(state.wx, days));
+  const srcEl = document.getElementById('fcastFemsSrc');
+  if (srcEl) {
+    srcEl.textContent = femsForecast
+      ? `Predicted fuel moisture, ERC & BI: FEMS NFDRS forecast for ${femsForecast.station} RAWS — model output from NWS gridded forecast, not a measurement.`
+      : '';
+    srcEl.style.display = femsForecast ? 'block' : 'none';
+  }
 }
