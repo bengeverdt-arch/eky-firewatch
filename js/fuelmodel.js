@@ -17,7 +17,14 @@ const GROUP_COLOR = {
 
 export async function fetchFuelModel(lat, lon) {
   const data = await workerFetch(`/fuel-model?lat=${lat}&lon=${lon}`, 'FUEL');
-  if (!data) return;
+  if (!data) {
+    // Don't keep the previous location's fuel model after a move
+    state.fuelModel = null;
+    const bar = document.getElementById('fuelModelBar');
+    if (bar) bar.style.display = 'none';
+    computeRead();
+    return;
+  }
 
   state.fuelModel = data;
   DIAG.ok('FUEL', `${data.name} (code ${data.code}) — ${data.desc}`);
