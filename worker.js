@@ -382,7 +382,10 @@ async function handleFEMS(url) {
   const now     = new Date();
   const end     = new Date(now.getTime() + 86400000).toISOString().slice(0, 10);
   const start   = new Date(now.getTime() - 14 * 86400000).toISOString().slice(0, 10);
-  const apiUrl  = `https://fems.fs2c.usda.gov/api/ext-climatology/download-nfdr-daily-summary/?dataset=observation&startDate=${start}&endDate=${end}&dataFormat=csv&stationIds=${station}&fuelModels=Y`;
+  // dataset=all returns observed rows (NFDRType "O") plus FEMS-predicted rows ("F")
+  // for today through ~7 days out. Window end extends a week to capture the forecast.
+  const fEnd    = new Date(now.getTime() + 8 * 86400000).toISOString().slice(0, 10);
+  const apiUrl  = `https://fems.fs2c.usda.gov/api/ext-climatology/download-nfdr-daily-summary/?dataset=all&startDate=${start}&endDate=${fEnd}&dataFormat=csv&stationIds=${station}&fuelModels=Y`;
 
   const res = await fetch(apiUrl);
   if (!res.ok) return err('FEMS fetch failed', `HTTP ${res.status}`);
