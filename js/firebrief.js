@@ -6,9 +6,9 @@ export function openBrief()  { document.getElementById('briefPanel').classList.r
 export function closeBrief() { document.getElementById('briefPanel').classList.add('hidden'); }
 
 export async function fetchFireBrief() {
-  DIAG.info('FWF', 'Fetching NWS Fire Weather Forecast text from LMK office');
+  DIAG.info('FWF', 'Fetching NWS Fire Weather Forecast for local fire weather zone');
 
-  const data = await workerFetch('/fire-brief', 'FWF');
+  const data = await workerFetch(`/fire-brief?lat=${state.LAT}&lon=${state.LON}`, 'FWF');
   const metaEl  = document.getElementById('briefMeta');
   const textEl  = document.getElementById('briefText');
   const alertEl = document.getElementById('briefAlert');
