@@ -1,4 +1,5 @@
 // ── NWS Fire Weather Brief (FWF text product) fetch + rendering ──
+import { state } from './state.js';
 import { workerFetch } from './api.js';
 import { DIAG } from './diag.js';
 
