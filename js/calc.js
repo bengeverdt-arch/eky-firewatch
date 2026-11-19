@@ -1,11 +1,13 @@
-// ── Fire behavior calculations + UI color helpers ──
+// ── Fire danger indices panel + shared UI color helpers ──
+// No invented rating: this panel shows official NFDRS values from FEMS,
+// how they compare with the same time of year at the station, and a
+// plain check of current readings against NWS Jackson's Red Flag criteria.
 import { state } from './state.js';
 
 // ── Color helpers ──
 export const c_T  = v => v>95?'var(--red)':v>85?'var(--orange)':v>75?'var(--amber)':'var(--text)';
 export const c_RH = v => v<20?'var(--red)':v<30?'var(--orange)':v<40?'var(--yellow)':'var(--green)';
 export const c_W  = v => v>30?'var(--red)':v>20?'var(--orange)':v>12?'var(--yellow)':'var(--text)';
-export const c_F  = v => v==null?'var(--muted)':v>70?'var(--red)':v>40?'var(--orange)':'var(--green)';
 export const d2c  = d => {
   if(d==null) return '—';
   return ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'][Math.round(d/22.5)%16];
@@ -17,66 +19,95 @@ export function setV(id, val, fn) {
   if(fn && val != null) el.style.color = fn(val);
 }
 
-// ── Fire Weather Index (simplified Fosberg FWI) ──
-export function calcFWI(t, rh, w) {
-  if(t==null||rh==null||w==null) return null;
-  const mc = Math.max(2, 10*Math.exp((rh-100)/10)+0.5*(t-60)*0.05);
-  const eta = Math.max(0, Math.min(1, 1-2*(mc/30)+1.5*(mc/30)**2-0.5*(mc/30)**3));
-  return Math.round(eta*Math.sqrt(1+w*w)/0.3002);
+// ── Station history comparison ──
+// Percent of same-time-of-year days at this station with a LOWER value.
+export function pctOf(kind, v) {
+  const arr = state.clim?.data?.[kind];
+  if (v == null || !arr?.length) return null;
+  let below = 0, equal = 0;
+  for (const x of arr) { if (x < v) below++; else if (x === v) equal++; }
+  return Math.round(100 * (below + equal / 2) / arr.length);
 }
 
-export function getRating(f) {
-  if(f==null) return{lbl:'—',c:'var(--muted)',pct:0,lvl:-1,summary:'Awaiting live weather data...'};
-  if(f<20)   return{lbl:'LOW',c:'var(--green)',pct:f/20*20,lvl:0,summary:'Low fire danger. Weather is not driving fire behavior right now. Normal crew protocols in effect.'};
-  if(f<40)   return{lbl:'MODERATE',c:'var(--yellow)',pct:20+(f-20)/20*20,lvl:1,summary:'Moderate danger. Unattended fires may escape. Identify escape routes and safety zones.'};
-  if(f<60)   return{lbl:'HIGH',c:'var(--orange)',pct:40+(f-40)/20*20,lvl:2,summary:'High danger. Fires start easily, spread quickly on slopes and ridges. LCES required.'};
-  if(f<80)   return{lbl:'VERY HIGH',c:'var(--red)',pct:60+(f-60)/20*20,lvl:3,summary:'Very high danger. Rapid spread, spotting likely. Crew safety is priority — no fire is worth a life.'};
-  return{lbl:'EXTREME',c:'var(--extreme)',pct:Math.min(100,80+(f-80)/20*20),lvl:4,summary:'EXTREME — Near/at Red Flag criteria. All fires potentially uncontrollable. Review LCES with full crew before any engagement.'};
+const pctColor = p => p==null ? 'var(--text)' : p>=90 ? 'var(--red)' : p>=75 ? 'var(--orange)' : 'var(--text)';
+// Color an ERC/BI value by where it falls in station history (neutral if no history)
+export const idxColor = (kind, v) => v==null ? 'var(--muted)' : pctColor(pctOf(kind, v));
+
+function pctPhrase(p) {
+  if (p >= 97) return 'Near the highest on record for this time of year';
+  if (p >= 90) return 'Top 10% for this time of year';
+  if (p >= 75) return 'Higher than usual for this time of year';
+  if (p >= 25) return 'Typical for this time of year';
+  return 'Lower than usual for this time of year';
 }
 
-function buildDangerSummary(r, wx, fm) {
-  if (r.lvl < 2) {
-    // FWI is weather-only — calm wind can rate LOW while fine fuels are critically dry
-    if (fm.fm1 != null && fm.fm1 < 8)
-      return `${r.lbl === 'LOW' ? 'Low' : 'Moderate'} weather-driven rating, but 1-hr fuels are at ${fm.fm1}% — fires will start easily and spread fast if wind picks up. Don't let a calm day set expectations.`;
-    return r.summary;
+function windowLabel(dateStr) {
+  const d = new Date(dateStr + 'T12:00:00');
+  const f = off => new Date(d.getTime() + off*86400000).toLocaleDateString('en-US',{month:'short',day:'numeric'});
+  return `${f(-15)} – ${f(15)}`;
+}
+
+function renderIndex(kind, v) {
+  const valEl = document.getElementById(`${kind}Val`);
+  const mark  = document.getElementById(`${kind}Mark`);
+  const cmp   = document.getElementById(`${kind}Cmp`);
+  if (!valEl || !mark || !cmp) return;
+
+  valEl.textContent = v != null ? Math.round(v) : '—';
+  valEl.style.color = idxColor(kind, v);
+
+  const p = pctOf(kind, v);
+  const c = state.clim;
+  if (p == null) {
+    mark.style.display = 'none';
+    cmp.textContent = v == null ? 'No FEMS value for this station today.'
+      : c?.failed ? 'Station history unavailable — no comparison possible.'
+      : 'Loading station history…';
+    return;
   }
-
-  const {rh, wind} = wx;
-  const {fm1} = fm;
-  const parts = [];
-
-  if (rh  != null && rh  < 30) parts.push(`RH at ${rh}%`);
-  if (wind != null && wind > 12) parts.push(`${wind} mph winds`);
-  if (fm1  != null && fm1 < 8)  parts.push(`1-hr fuels at ${fm1}%`);
-
-  if (!parts.length) return r.summary;
-
-  const cond = parts.join(', ');
-  if (r.lvl === 4) return `${cond} — near Red Flag criteria. All fires potentially uncontrollable. Crew safety overrides all other objectives. Review LCES with full crew before any engagement.`;
-  if (r.lvl === 3) return `${cond} — rapid spread and spotting expected. Confirm escape routes and safety zones before engagement. No fire is worth a life.`;
-  return `${cond} — fires start easily and spread quickly on slopes and ridges. LCES required on all assignments.`;
+  mark.style.display = 'block';
+  mark.style.left = `${Math.min(98, Math.max(2, p))}%`;
+  mark.style.background = pctColor(p);
+  cmp.innerHTML = `<b style="color:${pctColor(p)}">${pctPhrase(p)}.</b> `
+    + `Higher than ${p}% of ${windowLabel(c.date)} days at ${state.fm.station || 'this station'}, ${c.data.firstYear}–${c.data.lastYear}.`;
 }
 
-export function recalc() {
+// ── NWS Jackson (JKL) Red Flag criteria — check against current readings ──
+function renderRedFlag() {
   const {wx, fm} = state;
-  const f = calcFWI(wx.temp, wx.rh, wx.wind);
-  const r = getRating(f);
-  const rEl = document.getElementById('dRating');
-  rEl.textContent = r.lbl; rEl.style.color = r.c;
-  document.getElementById('dFWI').textContent = `FWI: ${f??'—'}`;
-  document.getElementById('dSummary').textContent = buildDangerSummary(r, wx, fm);
-  document.getElementById('dBar').style.cssText = `width:${Math.max(1,r.pct)}%;background:${r.c}`;
-  ['dl0','dl1','dl2','dl3','dl4'].forEach((id,i)=>document.getElementById(id).classList.toggle('act',i===r.lvl));
+  const rows = [
+    { id:'rf10',   val: fm.fm10, ok: v => v <= 8,  fmt: v => `${v.toFixed(1)}%` },
+    { id:'rfRH',   val: wx.rh,   ok: v => v <= 25, fmt: v => `${v}%` },
+    { id:'rfWind', val: wx.wind, ok: v => v >= 15, fmt: v => `${v} mph` },
+  ];
+  let met = 0, known = 0;
+  for (const r of rows) {
+    const el = document.getElementById(r.id); if (!el) continue;
+    const has = r.val != null, hit = has && r.ok(r.val);
+    if (has) known++;
+    if (hit) met++;
+    el.classList.toggle('met', hit);
+    el.querySelector('.rfmark').textContent = !has ? '?' : hit ? '✓' : '✗';
+    el.querySelector('.rfval').textContent  = has ? r.fmt(r.val) : 'no data';
+  }
+  const sum = document.getElementById('rfSum'); if (!sum) return;
+  const lead = known < 3 ? `${met} of 3 met (${3-known} unknown).` : `${met} of 3 met.`;
+  sum.innerHTML = `<b>${lead}</b> NWS considers a Red Flag Warning when all three line up. `
+    + `This only checks current readings — official warnings appear in the alert box under Live Conditions.`;
+}
 
-  const erc = fm.erc ?? null; // official FEMS value only — no invented fallback
-  const bi = fm.bi??null;
+// Name kept from the old rating code: fems.js / wx.js / main.js call recalc() when data changes
+export function recalc() {
+  const intro = document.getElementById('dIntro');
+  if (intro) intro.textContent = state.fm.station
+    ? `Official NFDRS values from ${state.fm.station} RAWS${state.fm.obsDate ? ` (${state.fm.obsDate})` : ''}, compared with the same time of year in past seasons.`
+    : 'Official NFDRS values from the selected RAWS, compared with the same time of year in past seasons.';
+  renderIndex('erc', state.fm.erc);
+  renderIndex('bi',  state.fm.bi);
 
-  const setFact = (cid, vid, val, disp) => {
-    const c = c_F(val);
-    const card = document.getElementById(cid); if(card) card.style.setProperty('--fc',c);
-    const vel  = document.getElementById(vid);  if(vel)  { vel.textContent=disp??'—'; vel.style.color=c; }
-  };
-  setFact('fc2','fv2',erc,erc);
-  setFact('fc3','fv3',bi, bi);
+  const fl = document.getElementById('biFlame');
+  if (fl) fl.textContent = state.fm.bi != null
+    ? `Rough guide: BI ÷ 10 ≈ ${Math.max(1, Math.round(state.fm.bi/10))} ft flames at the head of a fire in this station's reference fuels.`
+    : '';
+  renderRedFlag();
 }

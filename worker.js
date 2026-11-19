@@ -12,79 +12,9 @@
  *  GET /firms              → NASA FIRMS VIIRS thermal hotspots
  *  GET /perimeters         → Fire perimeters year-to-date (NIFC WFIGS)
  *  GET /fire-brief?lat=&lon= → NWS FWF text product, filtered to the location's fire wx zone
- *  GET /fuel-model?lat=&lon= → LANDFIRE FBFM40 fuel model at GPS point (READ Option B)
+ *  GET /fems-clim?station=&date= → 20-yr ERC/BI history for ±15 days around date
  *  GET /health               → Health check
  */
-
-// ── FBFM40 Fuel Model Lookup (Scott & Burgan 40 + Original 13) ──
-const FBFM40 = {
-  // Non-burnable
-  91:  { name: 'Urban/Developed',              group: 'NB', burnable: false, desc: 'Non-burnable - developed land' },
-  92:  { name: 'Snow/Ice',                     group: 'NB', burnable: false, desc: 'Non-burnable - snow or ice' },
-  93:  { name: 'Agriculture',                  group: 'NB', burnable: false, desc: 'Agricultural land - low fire risk' },
-  98:  { name: 'Water',                        group: 'NB', burnable: false, desc: 'Non-burnable - open water' },
-  99:  { name: 'Barren',                       group: 'NB', burnable: false, desc: 'Non-burnable - bare ground' },
-  // Original 13 models
-  1:   { name: 'FM1 - Short Grass',            group: 'GR', burnable: true,  desc: 'Short dry grass; fast spread, low flame height' },
-  2:   { name: 'FM2 - Timber/Grass Mix',       group: 'GS', burnable: true,  desc: 'Mixed grass and open timber; moderate spread' },
-  3:   { name: 'FM3 - Tall Grass',             group: 'GR', burnable: true,  desc: 'Dense tall grass; rapid spread, high flame height' },
-  4:   { name: 'FM4 - Chaparral',              group: 'SH', burnable: true,  desc: 'Tall shrubs 6+ ft; intense fire, high crown potential' },
-  5:   { name: 'FM5 - Low Brush',              group: 'SH', burnable: true,  desc: 'Low green shrubs; moderate spread' },
-  6:   { name: 'FM6 - Dormant Brush',          group: 'SH', burnable: true,  desc: 'Dormant brush/hardwood slash; moderate-high spread' },
-  7:   { name: 'FM7 - Southern Rough',         group: 'SH', burnable: true,  desc: 'Low shrubs with hardwood understory; moderate spread' },
-  8:   { name: 'FM8 - Compact Litter',         group: 'TL', burnable: true,  desc: 'Dense short-needle litter; slow spread, low intensity' },
-  9:   { name: 'FM9 - Hardwood Litter',        group: 'TL', burnable: true,  desc: 'Long-needle or hardwood litter; fast spread when dry' },
-  10:  { name: 'FM10 - Timber/Understory',     group: 'TL', burnable: true,  desc: 'Heavy litter and downed logs; high intensity, crown potential' },
-  11:  { name: 'FM11 - Light Slash',           group: 'SB', burnable: true,  desc: 'Light logging slash; moderate spread' },
-  12:  { name: 'FM12 - Medium Slash',          group: 'SB', burnable: true,  desc: 'Medium logging slash; high intensity' },
-  13:  { name: 'FM13 - Heavy Slash',           group: 'SB', burnable: true,  desc: 'Heavy logging slash; very high intensity' },
-  // GR - Grass
-  101: { name: 'GR1 - Short Sparse Grass',     group: 'GR', burnable: true,  desc: 'Very sparse short dry grass; low spread' },
-  102: { name: 'GR2 - Low Grass',              group: 'GR', burnable: true,  desc: 'Low continuous grass; moderate spread' },
-  103: { name: 'GR3 - Low-Medium Grass',       group: 'GR', burnable: true,  desc: 'Low-medium continuous grass; moderate spread' },
-  104: { name: 'GR4 - Moderate Dry Grass',     group: 'GR', burnable: true,  desc: 'Moderate dry grass; fast spread' },
-  105: { name: 'GR5 - Low Humid Grass',        group: 'GR', burnable: true,  desc: 'Moderate humid climate grass' },
-  106: { name: 'GR6 - Moderate Humid Grass',   group: 'GR', burnable: true,  desc: 'Moderate humid grass; high spread rate' },
-  107: { name: 'GR7 - High Dry Grass',         group: 'GR', burnable: true,  desc: 'Heavy dry grass; very fast spread' },
-  108: { name: 'GR8 - Coarse Dry Grass',       group: 'GR', burnable: true,  desc: 'Very heavy coarse dry grass; extreme spread potential' },
-  109: { name: 'GR9 - High Humid Grass',       group: 'GR', burnable: true,  desc: 'Very heavy humid grass; extreme spread' },
-  // GS - Grass-Shrub
-  121: { name: 'GS1 - Low Dry Grass-Shrub',    group: 'GS', burnable: true,  desc: 'Mixed grass and low shrubs; moderate spread' },
-  122: { name: 'GS2 - Mod Dry Grass-Shrub',    group: 'GS', burnable: true,  desc: 'Mixed grass-shrub; moderate-high spread' },
-  123: { name: 'GS3 - Mod Humid Grass-Shrub',  group: 'GS', burnable: true,  desc: 'Moderate humid grass-shrub mix' },
-  124: { name: 'GS4 - High Humid Grass-Shrub', group: 'GS', burnable: true,  desc: 'Heavy humid grass-shrub; high intensity' },
-  // SH - Shrub
-  141: { name: 'SH1 - Low Dry Shrub',          group: 'SH', burnable: true,  desc: 'Low load dry shrub; moderate spread' },
-  142: { name: 'SH2 - Mod Dry Shrub',          group: 'SH', burnable: true,  desc: 'Moderate dry shrub; moderate spread' },
-  143: { name: 'SH3 - Mod Humid Shrub',        group: 'SH', burnable: true,  desc: 'Dense low humid shrub; moderate spread' },
-  144: { name: 'SH4 - Low Humid Timber-Shrub', group: 'SH', burnable: true,  desc: 'Low humid shrub in timber; moderate spread' },
-  145: { name: 'SH5 - High Dry Shrub',         group: 'SH', burnable: true,  desc: 'Heavy dry shrub; high intensity' },
-  146: { name: 'SH6 - Low Humid Shrub',        group: 'SH', burnable: true,  desc: 'Low humid shrub; moderate intensity' },
-  147: { name: 'SH7 - Very High Dry Shrub',    group: 'SH', burnable: true,  desc: 'Very heavy dry shrub; extreme behavior, crown potential' },
-  148: { name: 'SH8 - High Humid Shrub',       group: 'SH', burnable: true,  desc: 'Heavy humid shrub; high intensity' },
-  149: { name: 'SH9 - Very High Humid Shrub',  group: 'SH', burnable: true,  desc: 'Very heavy humid shrub; high intensity, crown potential' },
-  // TU - Timber-Understory
-  161: { name: 'TU1 - Low Dry Timber-Understory',      group: 'TU', burnable: true, desc: 'Low load timber with grass/shrub understory; moderate spread' },
-  162: { name: 'TU2 - Mod Humid Timber-Shrub',         group: 'TU', burnable: true, desc: 'Moderate humid timber-shrub; moderate spread' },
-  163: { name: 'TU3 - Mod Humid Timber-Grass-Shrub',   group: 'TU', burnable: true, desc: 'Mixed humid timber with grass and shrub; moderate-high spread' },
-  164: { name: 'TU4 - Dwarf Conifer/Understory',       group: 'TU', burnable: true, desc: 'Dwarf conifer with grass understory; crown potential' },
-  165: { name: 'TU5 - High Dry Timber-Shrub',          group: 'TU', burnable: true, desc: 'Heavy dry timber-shrub; high intensity, crown potential' },
-  // TL - Timber Litter
-  181: { name: 'TL1 - Low Load Compact Timber Litter',  group: 'TL', burnable: true, desc: 'Compact timber litter; slow spread, low intensity' },
-  182: { name: 'TL2 - Low Broadleaf Litter',           group: 'TL', burnable: true, desc: 'Broadleaf litter; low-moderate spread' },
-  183: { name: 'TL3 - Mod Conifer Litter',             group: 'TL', burnable: true, desc: 'Moderate conifer litter; low spread' },
-  184: { name: 'TL4 - Small Downed Logs',              group: 'TL', burnable: true, desc: 'Conifer litter with small logs; moderate intensity' },
-  185: { name: 'TL5 - High Conifer Litter',            group: 'TL', burnable: true, desc: 'Heavy conifer litter; moderate spread and intensity' },
-  186: { name: 'TL6 - Mod Broadleaf Litter',           group: 'TL', burnable: true, desc: 'Moderate broadleaf litter; fast spread when dry - common EKY hardwoods' },
-  187: { name: 'TL7 - Large Downed Logs',              group: 'TL', burnable: true, desc: 'Litter with large downed logs; high intensity' },
-  188: { name: 'TL8 - Long Needle Litter',             group: 'TL', burnable: true, desc: 'Long-needle litter; fast spread, moderate intensity' },
-  189: { name: 'TL9 - Very High Broadleaf Litter',     group: 'TL', burnable: true, desc: 'Very heavy broadleaf litter; fast spread when dry' },
-  // SB - Slash-Blowdown
-  201: { name: 'SB1 - Low Slash',              group: 'SB', burnable: true,  desc: 'Light logging slash; moderate spread' },
-  202: { name: 'SB2 - Mod Slash',              group: 'SB', burnable: true,  desc: 'Moderate slash; high intensity' },
-  203: { name: 'SB3 - High Slash',             group: 'SB', burnable: true,  desc: 'Heavy slash; very high intensity' },
-  204: { name: 'SB4 - Blowdown',               group: 'SB', burnable: true,  desc: 'Wind-thrown timber; extreme fire behavior' },
-};
 
 const DEFAULT_LAT = 37.129;
 const DEFAULT_LON = -84.083;
@@ -165,7 +95,7 @@ const CACHE_TTL = {
   '/firms':      600,   // 10 min
   '/perimeters': 1800,  // 30 min - perimeters change slowly
   '/fire-brief':  1800,  // 30 min
-  '/fuel-model':  86400, // 24 hr - LANDFIRE data changes annually at most
+  '/fems-clim':   86400, // 24 hr - history only changes once a year
 };
 
 // ─────────────────────────────────────────────
@@ -199,12 +129,12 @@ export default {
         case '/firms':      response = await handleFIRMS();         break;
         case '/perimeters': response = await handlePerimeters();    break;
         case '/fire-brief':  response = await handleFireBrief(url);   break;
-        case '/fuel-model':  response = await handleFuelModel(url);  break;
+        case '/fems-clim':   response = await handleFemsClim(url);   break;
         case '/health':      response = json({ ok: true, ts: new Date().toISOString(), version: '2.2' }); break;
         default:
           response = json({
             name: 'EKY Fire Watch API', version: '2.2',
-            endpoints: ['/nws', '/fems', '/forecast', '/alerts', '/fires', '/firms', '/perimeters', '/fire-brief', '/fuel-model', '/health'],
+            endpoints: ['/nws', '/fems', '/forecast', '/alerts', '/fires', '/firms', '/perimeters', '/fire-brief', '/fems-clim', '/health'],
           });
       }
     } catch (e) {
@@ -838,86 +768,54 @@ async function handleFireBrief(url) {
 }
 
 // ─────────────────────────────────────────────
-// LANDFIRE FBFM40 POINT QUERY (READ Option B)
-// WMS GetFeatureInfo against LANDFIRE GeoServer
+// FEMS CLIMATOLOGY - how today's ERC/BI compares
+// Pulls every observed day for the last 20 full years, keeps the
+// days within ±15 days of the requested date's day-of-year, and
+// returns the sorted ERC and BI values so the page can compute
+// "higher than X% of days at this time of year".
 // ─────────────────────────────────────────────
-// Fetch a single LANDFIRE WMS layer at a point, return the raw GRAY_INDEX value or null
-async function landfire_query(layer, minx, miny, maxx, maxy) {
-  const u = `https://edcintl.cr.usgs.gov/geoserver/landfire/conus_2024/ows` +
-    `?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetFeatureInfo` +
-    `&LAYERS=${layer}&QUERY_LAYERS=${layer}` +
-    `&INFO_FORMAT=application%2Fjson` +
-    `&X=2&Y=2&WIDTH=5&HEIGHT=5` +
-    `&BBOX=${minx},${miny},${maxx},${maxy}` +
-    `&SRS=EPSG%3A4326`;
-  try {
-    const res = await fetch(u);
-    if (!res.ok) return null;
-    const ct = res.headers.get('content-type') || '';
-    if (ct.includes('json')) {
-      const d = await res.json();
-      const v = d?.features?.[0]?.properties?.GRAY_INDEX ?? null;
-      return v != null ? Number(v) : null;
-    } else {
-      const t = await res.text();
-      const m = t.match(/GRAY_INDEX\s*=\s*(\d+)/i);
-      return m ? parseInt(m[1]) : null;
-    }
-  } catch { return null; }
-}
+async function handleFemsClim(url) {
+  const station = url.searchParams.get('station') || '157201';
+  const date    = url.searchParams.get('date') || new Date().toISOString().slice(0, 10);
+  const lastYr  = new Date().getUTCFullYear() - 1;
+  const firstYr = lastYr - 19;
+  const apiUrl  = `https://fems.fs2c.usda.gov/api/ext-climatology/download-nfdr-daily-summary/?dataset=all&startDate=${firstYr}-01-01&endDate=${lastYr}-12-31&dataFormat=csv&stationIds=${station}&fuelModels=Y`;
 
-async function handleFuelModel(url) {
-  const { lat, lon } = getCoords(url);
+  const res = await fetch(apiUrl);
+  if (!res.ok) return err('FEMS history fetch failed', `HTTP ${res.status}`);
+  const lines = (await res.text()).trim().split('
+');
+  if (lines.length < 2) return err('FEMS history empty');
 
-  const buf  = 0.002;
-  const minx = lon - buf, miny = lat - buf;
-  const maxx = lon + buf, maxy = lat + buf;
+  const header = lines[0].replace(/"/g, '').split(',').map(h => h.trim());
+  const iDate = header.indexOf('ObservationTime');
+  const iType = header.indexOf('NFDRType');
+  const iERC  = header.indexOf('ERC');
+  const iBI   = header.indexOf('BI');
+  if (iDate < 0 || iERC < 0 || iBI < 0) return err('FEMS history: unexpected columns', header.join(','));
 
-  // Fetch FBFM40, CBH, and CBD in parallel
-  const [fbfm40, cbhRaw, cbdRaw] = await Promise.all([
-    landfire_query('LF2024_FBFM40_CONUS', minx, miny, maxx, maxy),
-    landfire_query('LF2024_CBH_CONUS',    minx, miny, maxx, maxy),
-    landfire_query('LF2024_CBD_CONUS',    minx, miny, maxx, maxy),
-  ]);
+  const doy = d => Math.floor((Date.UTC(+d.slice(0, 4), +d.slice(5, 7) - 1, +d.slice(8, 10)) - Date.UTC(+d.slice(0, 4), 0, 0)) / 86400000);
+  const target = doy(date);
+  const near   = d => { const x = Math.abs(doy(d) - target); return Math.min(x, 365 - x) <= 15; };
 
-  if (fbfm40 == null) {
-    return err('No fuel model data returned for this location - may be outside CONUS coverage');
+  const erc = [], bi = [];
+  const years = new Set();
+  for (let k = 1; k < lines.length; k++) {
+    const r = lines[k].replace(/"/g, '').split(',');
+    if (iType >= 0 && r[iType] === 'F') continue;
+    const d = r[iDate];
+    if (!d || !near(d)) continue;
+    const e = parseFloat(r[iERC]), b = parseFloat(r[iBI]);
+    if (!isNaN(e)) { erc.push(e); years.add(d.slice(0, 4)); }
+    if (!isNaN(b)) bi.push(b);
   }
+  if (erc.length < 100) return err('Not enough history at this station', `${erc.length} days`);
 
-  // CBH: LANDFIRE stores as meters × 10 (e.g. 15 = 1.5 m). 0 = no canopy.
-  const cbh_m     = (cbhRaw != null && cbhRaw > 0) ? cbhRaw * 0.1 : null;
-  // CBD: LANDFIRE stores as kg/m³ × 100 (e.g. 10 = 0.10 kg/m³). 0 = no canopy.
-  const cbd_kgm3  = (cbdRaw != null && cbdRaw > 0) ? cbdRaw * 0.01 : null;
-
-  const fm = FBFM40[fbfm40];
-  if (!fm) {
-    return json({
-      lat, lon, code: fbfm40,
-      name: `FBFM40 Code ${fbfm40}`, group: 'UNKNOWN', burnable: true,
-      desc: 'Fuel model code not in lookup table',
-      cbh_m, cbd_kgm3,
-      source: 'LANDFIRE 2024',
-    });
-  }
-
-  // Warn when a conifer-labeled TL model is returned for eastern deciduous forest coordinates.
-  // LANDFIRE 2024 frequently misclassifies oak/hickory/maple/beech stands as conifer litter.
-  // Conifer TL codes: TL1 (181), TL3 (183), TL5 (185), TL8 (188)
-  const CONIFER_TL = new Set([181, 183, 185, 188]);
-  const inEasternDeciduous = lat >= 34 && lat <= 44 && lon >= -92 && lon <= -72;
-  const note = (CONIFER_TL.has(fbfm40) && inEasternDeciduous)
-    ? 'LANDFIRE shows conifer litter — eastern hardwood forests (oak, hickory, maple, beech) typically classify as TL2 (low broadleaf) or TL6 (broadleaf litter). Verify locally and consider overriding.'
-    : null;
-
+  const yrs = [...years].sort();
   return json({
-    lat, lon, code: fbfm40,
-    name:     fm.name,
-    group:    fm.group,
-    burnable: fm.burnable,
-    desc:     fm.desc,
-    note,
-    cbh_m,
-    cbd_kgm3,
-    source:   'LANDFIRE 2024',
+    station, date, fuelModel: 'Y',
+    firstYear: +yrs[0], lastYear: +yrs[yrs.length - 1], years: yrs.length,
+    erc: erc.sort((a, b) => a - b),
+    bi:  bi.sort((a, b) => a - b),
   });
 }
