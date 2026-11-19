@@ -40,7 +40,6 @@ export async function fetchNWS() {
     ts.toLocaleDateString('en-US',{month:'short',day:'numeric'});
 
   updateWxCards();
-  if(state.wx.windDirDeg != null && state.wx.wind !== 0) autoWindDir(state.wx.windDirDeg);
 
   // Show per-parameter source attribution under each wx card
   if (data.sources) showWxSources(data.sources);
@@ -71,14 +70,6 @@ export function updateWxCards() {
   document.getElementById('wDewSub').textContent = wx.dew!=null?(wx.dew>50?'Humid':wx.dew>35?'Moderate':'Dry'):'—';
   setV('wPrecip', wx.precip!=null?wx.precip.toFixed(2):null, ()=>'#74b9ff');
   recalc();
-}
-
-export function autoWindDir(deg) {
-  const dirs = [0,45,90,135,180,225,270,315];
-  let best=90, min=999;
-  dirs.forEach(d=>{ const diff=Math.abs(((deg-d+540)%360)-180); if(diff<min){min=diff;best=d} });
-  state.windDeg = best;
-  document.querySelectorAll('#dbtns .dbtn').forEach((b,i)=>b.classList.toggle('act',dirs[i]===best));
 }
 
 export function showWxSources(sources) {

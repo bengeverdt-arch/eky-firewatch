@@ -94,7 +94,7 @@ const TERMS = [
   { key:'CBH',    sec:'Fire Behavior', term:'CBH / CBD — Canopy Base Height / Bulk Density',
     def:'CBH: height from ground to the bottom of the live canopy — lower = easier for surface fire to climb. CBD: how much canopy fuel per volume — higher = canopy can carry fire.' },
   { key:'ROTHERMEL', sec:'Fire Behavior', term:'Rothermel Model',
-    def:'The 1972 surface fire spread model behind BehavePlus, FARSITE, and READ. Estimates ROS and intensity from fuel, moisture, wind, and slope.' },
+    def:'The 1972 surface fire spread model behind BehavePlus and FARSITE. Estimates ROS and intensity from fuel, moisture, wind, and slope.' },
 
   // ── Operations ──
   { key:'LCES',   sec:'Operations', term:'LCES',

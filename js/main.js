@@ -10,7 +10,6 @@ import { fetchFuelModel } from './fuelmodel.js';
 import { recalc } from './calc.js';
 import { fetchFireBrief, openBrief, closeBrief } from './firebrief.js';
 import { openGlossary, closeGlossary, initGlossary } from './glossary.js';
-import { computeRead, openRead, closeRead, setSlopeRead, clearReadIgnition, setFuelOverride } from './read.js';
 
 // ── Clock ──
 function tick() {
@@ -20,14 +19,6 @@ function tick() {
   document.getElementById('fTime').textContent = s;
 }
 setInterval(tick, 1000); tick();
-
-// ── Wind direction selector (spread panel) ──
-function setWD(btn, deg) {
-  document.querySelectorAll('#dbtns .dbtn').forEach(b=>b.classList.remove('act'));
-  btn.classList.add('act');
-  state.windDeg = deg;
-  recalc();
-}
 
 // ── Main data load ──
 let loading = false;
@@ -43,7 +34,7 @@ export async function loadAll() {
     // Resolve location FIRST so every fetch below uses the right coordinates/RAWS
     setSplash('LOCATING...', 5);
     await resolveLocation();
-    fetchFuelModel(state.LAT, state.LON); // non-blocking — calls computeRead() when it lands
+    fetchFuelModel(state.LAT, state.LON); // non-blocking
 
     setSplash('FETCHING NWS WEATHER...', 10);
     await fetchNWS();
@@ -61,7 +52,6 @@ export async function loadAll() {
     fetchFireBrief(); // non-blocking — don't await, let it load async
 
     recalc();
-    computeRead();
     DIAG.info('MAIN','Load complete');
   } catch (e) {
     DIAG.err('MAIN', 'Load failed', e.message);
@@ -98,15 +88,9 @@ window.addEventListener('DOMContentLoaded', () => {
 
 // ── Expose functions needed by inline HTML event handlers ──
 window.loadAll           = loadAll;
-window.openRead          = openRead;
-window.closeRead         = closeRead;
-window.setSlopeRead      = setSlopeRead;
-window.clearReadIgnition = clearReadIgnition;
-window.setFuelOverride   = setFuelOverride;
 window.openDiag       = openDiag;
 window.closeDiag      = closeDiag;
 window.copyLog        = copyLog;
-window.setWD          = setWD;
 window.changeStation  = changeStation;
 window.toggleMapLayer       = toggleMapLayer;
 window.toggleImagery        = toggleImagery;

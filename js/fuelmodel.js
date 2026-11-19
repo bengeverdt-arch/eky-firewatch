@@ -1,8 +1,7 @@
-// ── LANDFIRE FBFM40 point query — READ Option B ──
+// ── LANDFIRE FBFM40 point query — fuel model at your location ──
 import { state } from './state.js';
 import { workerFetch } from './api.js';
 import { DIAG } from './diag.js';
-import { computeRead } from './read.js';
 
 // Group colors match the FBFM40 legend in the map
 const GROUP_COLOR = {
@@ -22,7 +21,6 @@ export async function fetchFuelModel(lat, lon) {
     state.fuelModel = null;
     const bar = document.getElementById('fuelModelBar');
     if (bar) bar.style.display = 'none';
-    computeRead();
     return;
   }
 
@@ -47,6 +45,4 @@ export async function fetchFuelModel(lat, lon) {
     note.style.display = data.note ? 'block' : 'none';
   }
   bar.style.display = 'block';
-
-  computeRead();
 }

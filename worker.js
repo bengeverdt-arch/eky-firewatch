@@ -13,7 +13,6 @@
  *  GET /perimeters         → Fire perimeters year-to-date (NIFC WFIGS)
  *  GET /fire-brief?lat=&lon= → NWS FWF text product, filtered to the location's fire wx zone
  *  GET /fuel-model?lat=&lon= → LANDFIRE FBFM40 fuel model at GPS point (READ Option B)
- *  GET /slope?lat=&lon=      → USGS 3DEP terrain slope at point
  *  GET /health               → Health check
  */
 
@@ -167,7 +166,6 @@ const CACHE_TTL = {
   '/perimeters': 1800,  // 30 min - perimeters change slowly
   '/fire-brief':  1800,  // 30 min
   '/fuel-model':  86400, // 24 hr - LANDFIRE data changes annually at most
-  '/slope':       3600,  // 1 hr - terrain is static
 };
 
 // ─────────────────────────────────────────────
@@ -202,12 +200,11 @@ export default {
         case '/perimeters': response = await handlePerimeters();    break;
         case '/fire-brief':  response = await handleFireBrief(url);   break;
         case '/fuel-model':  response = await handleFuelModel(url);  break;
-        case '/slope':       response = await handleSlope(url);       break;
         case '/health':      response = json({ ok: true, ts: new Date().toISOString(), version: '2.2' }); break;
         default:
           response = json({
             name: 'EKY Fire Watch API', version: '2.2',
-            endpoints: ['/nws', '/fems', '/forecast', '/alerts', '/fires', '/firms', '/perimeters', '/fire-brief', '/fuel-model', '/slope', '/health'],
+            endpoints: ['/nws', '/fems', '/forecast', '/alerts', '/fires', '/firms', '/perimeters', '/fire-brief', '/fuel-model', '/health'],
           });
       }
     } catch (e) {
@@ -904,40 +901,4 @@ async function handleFuelModel(url) {
     cbd_kgm3,
     source:   'LANDFIRE 2024',
   });
-}
-
-// ─────────────────────────────────────────────
-// USGS 3DEP - TERRAIN SLOPE AT POINT
-// Samples elevation at 3 nearby points via EPQS,
-// computes slope from the gradient vector.
-// ─────────────────────────────────────────────
-async function handleSlope(url) {
-  const { lat, lon } = getCoords(url);
-
-  const epqs = (la, lo) =>
-    fetch(`https://epqs.nationalmap.gov/v1/json?x=${lo}&y=${la}&wkid=4326&units=Meters&includeDate=false`)
-      .then(r => r.json())
-      .then(d => parseFloat(d.value));
-
-  // Sample center + ~111 m north + ~111 m east in parallel
-  const δ = 0.001;
-  const [z0, zN, zE] = await Promise.all([
-    epqs(lat,     lon),
-    epqs(lat + δ, lon),
-    epqs(lat,     lon + δ),
-  ]);
-
-  if (isNaN(z0) || isNaN(zN) || isNaN(zE) || z0 < -9999)
-    return err('Elevation query failed — outside 3DEP coverage or EPQS unavailable');
-
-  const dx       = δ * 111320 * Math.cos(lat * Math.PI / 180); // meters east
-  const dy       = δ * 111320;                                  // meters north
-  const rise     = Math.sqrt(((zE - z0) / dx) ** 2 + ((zN - z0) / dy) ** 2);
-  const slopeDeg = +(Math.atan(rise) * 180 / Math.PI).toFixed(1);
-  const slopePct = Math.round(rise * 100);
-
-  const bins     = [0, 10, 20, 30, 40];
-  const slopeBin = bins.reduce((a, b) => Math.abs(b - slopePct) < Math.abs(a - slopePct) ? b : a);
-
-  return json({ lat, lon, slopeDeg, slopePct, slopeBin });
 }
