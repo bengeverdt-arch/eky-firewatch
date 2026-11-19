@@ -441,14 +441,41 @@ function exitPinMode(lat, lon, onDrop) {
   if (lat != null && onDrop) onDrop(lat, lon);
 }
 
+// ── Basemaps (Esri — no API key required) ──
+// CARTO started requiring an API key (tiles render "API KEY REQUIRED"), so all
+// basemaps now come from Esri's public tile services. Each basemap is a stack:
+// base tiles + optional roads/labels overlays in refPane.
+const ESRI      = 'https://server.arcgisonline.com/ArcGIS/rest/services';
+const ESRI_ATTR = 'Tiles &copy; <a href="https://www.esri.com">Esri</a> — Esri, USGS, NOAA, HERE, OpenStreetMap contributors';
+const esri = (svc, opts = {}) =>
+  L.tileLayer(`${ESRI}/${svc}/MapServer/tile/{z}/{y}/{x}`, { maxZoom: 19, attribution: ESRI_ATTR, ...opts });
+
+const BASEMAPS = {
+  // Terrain shading + roads + labels in a single tile set
+  light:   () => [esri('World_Topo_Map')],
+  // Dark hillshade terrain, transportation network, and place labels on top
+  dark:    () => [
+    esri('Elevation/World_Hillshade_Dark',  { maxNativeZoom: 16 }),
+    esri('Reference/World_Transportation',  { pane: 'refPane', opacity: 0.55 }),
+    esri('Canvas/World_Dark_Gray_Reference', { pane: 'refPane', maxNativeZoom: 16 }),
+  ],
+  imagery: () => [
+    esri('World_Imagery'),
+    esri('Reference/World_Transportation',      { pane: 'refPane', opacity: 0.7 }),
+    esri('Reference/World_Boundaries_and_Places', { pane: 'refPane' }),
+  ],
+};
+
+function setBasemap(key) {
+  if (!basemapLayer) return;
+  basemapLayer.clearLayers();
+  BASEMAPS[key]().forEach(l => basemapLayer.addLayer(l));
+}
+
 // ── Basemap swap for light/dark theme ──
 export function swapBasemap(light) {
   if (!basemapLayer || imageryOn) return;
-  basemapLayer.setUrl(
-    light
-      ? 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png'
-      : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
-  );
+  setBasemap(light ? 'light' : 'dark');
 }
 
 // ── Imagery toggle ──
@@ -456,17 +483,10 @@ export function toggleImagery(btn) {
   if (!state.kyMap || !basemapLayer) return;
   imageryOn = !imageryOn;
   if (imageryOn) {
-    basemapLayer.setUrl(
-      'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
-    );
+    setBasemap('imagery');
     btn.classList.add('act');
   } else {
-    const isLight = document.documentElement.classList.contains('light');
-    basemapLayer.setUrl(
-      isLight
-        ? 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png'
-        : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
-    );
+    setBasemap(document.documentElement.classList.contains('light') ? 'light' : 'dark');
     btn.classList.remove('act');
   }
 }
