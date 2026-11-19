@@ -35,9 +35,11 @@ function buildFrontNote(wx, days) {
   // Wind direction shift — current vs day-1 forecast, or day-0 vs day-1
   const fDir0 = days[0]?.windDir != null ? DIR_DEG[days[0].windDir] : null;
   const fDir1 = days[1]?.windDir != null ? DIR_DEG[days[1].windDir] : null;
-  const windShift = (
-    (windDirDeg != null && fDir1 != null && angDiff(windDirDeg, fDir1) >= 90) ||
-    (fDir0      != null && fDir1 != null && angDiff(fDir0, fDir1)      >= 90)
+  // Direction changes in light/variable wind (under 8 mph) aren't operationally meaningful
+  const w0 = days[0]?.wind, w1 = days[1]?.wind;
+  const windShift = (w1 != null && w1 >= 8) && (
+    (windDirDeg != null && wind >= 8 && fDir1 != null && angDiff(windDirDeg, fDir1) >= 90) ||
+    (fDir0      != null && w0 != null && w0 >= 8 && fDir1 != null && angDiff(fDir0, fDir1) >= 90)
   );
 
   // ── Classify ──
@@ -129,9 +131,9 @@ function renderCards(days) {
   const c_wind = v => v==null?'var(--muted)':v>25?'var(--red)':v>15?'var(--yellow)':'var(--text)';
   // Same thresholds as the dead fuel moisture bars
   const c_fm   = v => v==null?'var(--muted)':v<8?'var(--red)':v<12?'var(--orange)':v<18?'var(--yellow)':'var(--green)';
-  const femsRow = (lbl, val, unit, color) => `
+  const femsRow = (lbl, term, val, unit, color) => `
         <div class="fcastrow">
-          <span class="fcastlbl">${lbl}</span>
+          <span class="fcastlbl" data-term="${term}">${lbl}</span>
           <div><span class="fcastval" style="color:${color}">${val ?? '—'}</span><span class="fcastunit">${unit}</span></div>
         </div>`;
   const top_color = d => {
@@ -153,7 +155,7 @@ function renderCards(days) {
         <div class="fcastdate">${dateStr}</div>
         <div class="fcastdow">${dayName}</div>
         <div class="fcastrow">
-          <span class="fcastlbl">RH</span>
+          <span class="fcastlbl" data-term="RH">RH</span>
           <div><span class="fcastval" style="color:${c_rh(d.rh)}">${d.rh??'—'}</span><span class="fcastunit">%</span></div>
         </div>
         <div class="fcastrow">
@@ -168,11 +170,11 @@ function renderCards(days) {
           const fx = femsForecast?.byDate.get(d.date);
           if (!fx) return '';
           return `<div class="fcast-fems">
-            <div class="fcast-fems-lbl">FEMS PREDICTED</div>
-            ${femsRow('1-hr FM',  fx.fm1,  '%', c_fm(fx.fm1))}
-            ${femsRow('10-hr FM', fx.fm10, '%', c_fm(fx.fm10))}
-            ${femsRow('ERC', fx.erc != null ? Math.round(fx.erc) : null, '', c_F(fx.erc))}
-            ${femsRow('BI',  fx.bi  != null ? Math.round(fx.bi)  : null, '', c_F(fx.bi))}
+            <div class="fcast-fems-lbl" data-term="FEMS">FEMS PREDICTED</div>
+            ${femsRow('1-hr FM',  '1HR',  fx.fm1,  '%', c_fm(fx.fm1))}
+            ${femsRow('10-hr FM', '10HR', fx.fm10, '%', c_fm(fx.fm10))}
+            ${femsRow('ERC', 'ERC', fx.erc != null ? Math.round(fx.erc) : null, '', c_F(fx.erc))}
+            ${femsRow('BI',  'BI',  fx.bi  != null ? Math.round(fx.bi)  : null, '', c_F(fx.bi))}
           </div>`;
         })()}
         <div class="fcastshort">${d.shortFcast||''}</div>

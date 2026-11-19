@@ -38,7 +38,7 @@ export const DIAG = {
     `;
   },
   toText() {
-    return 'EKY FIRE WATCH v4 — DIAGNOSTICS LOG\n' +
+    return 'EKY FIRE RADAR v5.0 — DIAGNOSTICS LOG\n' +
            '====================================\n' +
            `Generated: ${new Date().toISOString()}\n\n` +
            this.entries.map(e =>

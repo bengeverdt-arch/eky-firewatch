@@ -99,9 +99,9 @@ const FM_NAMES = {
   161:'TU1 – Low Load Dry Shrub/Grass',162:'TU2 – Moderate Load Humid Shrub/Grass',
   163:'TU3 – Moderate Load Well Shaded',164:'TU4 – Dwarf Conifer Understory',165:'TU5 – Very High Load',
   181:'TL1 – Low Load Compact Litter',182:'TL2 – Low Load Broadleaf Litter',
-  183:'TL3 – Moderate Load Broadleaf Litter',184:'TL4 – Small Downed Logs',
-  185:'TL5 – High Load Conifer Litter',186:'TL6 – Moderate Load Broadleaf Litter (mesic)',
-  187:'TL7 – Heavy Load Broadleaf Litter',188:'TL8 – Long-Needle Litter',
+  183:'TL3 – Moderate Load Conifer Litter',184:'TL4 – Small Downed Logs',
+  185:'TL5 – High Load Conifer Litter',186:'TL6 – Moderate Load Broadleaf Litter',
+  187:'TL7 – Large Downed Logs',188:'TL8 – Long-Needle Litter',
   189:'TL9 – Very High Load Broadleaf Litter',
   201:'SB1 – Low Load Activity Fuel',202:'SB2 – Moderate Load Activity Fuel',
   203:'SB3 – High Load Activity Fuel',204:'SB4 – High Load Humid Activity Fuel',
@@ -114,7 +114,11 @@ function codeToGroup(c) {
   if (c >= 141) return 'SH';
   if (c >= 121) return 'GS';
   if (c >= 101) return 'GR';
-  return 'TL'; // Original 13 — mostly timber
+  // Original 13 (Anderson 1982)
+  if (c <= 3)  return 'GR';
+  if (c <= 7)  return 'SH';
+  if (c <= 10) return 'TL';
+  return 'SB';
 }
 
 // ─── MODULE STATE ──────────────────────────────────────────────────────────
@@ -127,10 +131,11 @@ let mapClickOn = false;
 let lastCalc   = null;   // cached calculation inputs + results
 
 // ─── ROTHERMEL SURFACE FIRE SPREAD MODEL (1972) ────────────────────────────
-function rothermel(fp, dm1, lmH, lmW, windMph, slope, group) {
+function rothermel(fp, dm1, lmH, lmW, windMph, slope, group, dm10In, dm100In) {
   const waf   = WAF[group] ?? 0.25;
-  const dm10  = dm1 * 1.5;
-  const dm100 = dm1 * 2.5;
+  // RAWS-measured 10/100-hr when available, otherwise scaled from 1-hr
+  const dm10  = dm10In  ?? dm1 * 1.5;
+  const dm100 = dm100In ?? dm1 * 2.5;
 
   const fuels = [];
   if (fp.w1   > 0) fuels.push({w: fp.w1   * TA2, s: fp.sav1,         M: dm1,  live:false});
@@ -208,7 +213,7 @@ function rothermel(fp, dm1, lmH, lmW, windMph, slope, group) {
   // Byram flame length (ft)
   const L = I_b > 0 ? 0.45 * I_b**0.46 : 0;
 
-  return { ros:R, rosMph:R/88, I_b, flameLen:L };
+  return { ros:R, rosMph:R/88, I_b, flameLen:L, midflameMph: windMph * waf };
 }
 
 // ─── VAN WAGNER CROWN FIRE MODEL (1977) ───────────────────────────────────
@@ -289,7 +294,7 @@ function d2c(d) {
 
 // ─── PLAIN-LANGUAGE CREW BRIEFING ─────────────────────────────────────────
 function buildBriefText(calc) {
-  const {r60, g30, g60, g120, fm, wx, fems, dm1} = calc;
+  const {r60, g30, g60, g120, fm, wx, fems, dm1, crown} = calc;
   const fl = flameLabel(r60.flameLen);
 
   const lines = [
@@ -322,8 +327,13 @@ function buildBriefText(calc) {
   if ((wx.wind ?? 0) >= 20) lines.push(`High wind (${wx.wind} mph) — spotting potential beyond active head.`);
   if (slopePct >= 30)       lines.push(`Steep slope (${slopePct}%) — fire will accelerate uphill. Plan escape downslope.`);
 
+  if (crown?.level === 3)      lines.push('ACTIVE CROWN FIRE possible — fire can run through the canopy. Long-range spotting. Indirect tactics only.');
+  else if (crown?.level === 2) lines.push('TORCHING possible — individual trees and groups can flare up and throw embers ahead of the fire.');
+
   lines.push('');
-  lines.push('Surface fire only. Crown fire not assessed. Verify with FBAN before suppression decisions.');
+  lines.push(crown?.level >= 1
+    ? `Crown check: ${crown.label} (Van Wagner, LANDFIRE canopy). Verify with FBAN before suppression decisions.`
+    : 'Crown fire not assessed — no canopy data at this point. Verify with FBAN before suppression decisions.');
   return lines.join('\n');
 }
 
@@ -435,15 +445,21 @@ export function computeRead() {
   const windMph = wx?.wind ?? 5;
   const windDir = wx?.windDirDeg ?? 270;
 
-  const r = rothermel(fp, dm1, lmH, lmW, windMph, slopePct, fm.group);
+  const dm10  = fems?.fm10  != null ? fems.fm10  / 100 : null;
+  const dm100 = fems?.fm100 != null ? fems.fm100 / 100 : null;
+
+  const r = rothermel(fp, dm1, lmH, lmW, windMph, slopePct, fm.group, dm10, dm100);
   if (!r) { hideSumBar(); return; }
 
-  const g30  = ellipseGeom(r.ros, windMph, 30);
-  const g60  = ellipseGeom(r.ros, windMph, 60);
-  const g120 = ellipseGeom(r.ros, windMph, 120);
+  // Anderson (1983) length-to-breadth uses midflame wind, not 20-ft wind
+  const g30  = ellipseGeom(r.ros, r.midflameMph, 30);
+  const g60  = ellipseGeom(r.ros, r.midflameMph, 60);
+  const g120 = ellipseGeom(r.ros, r.midflameMph, 120);
 
-  const cbh_m    = fuelOverride ? null : state.fuelModel?.cbh_m ?? null;
-  const cbd_kgm3 = fuelOverride ? null : state.fuelModel?.cbd_kgm3 ?? null;
+  // Canopy (CBH/CBD) comes from LANDFIRE at the point regardless of surface fuel
+  // override — overriding the surface model doesn't change the canopy above it.
+  const cbh_m    = state.fuelModel?.cbh_m ?? null;
+  const cbd_kgm3 = state.fuelModel?.cbd_kgm3 ?? null;
   const crown    = crownCheck(r.I_b, r.ros, cbh_m, cbd_kgm3);
 
   lastCalc = { r60:r, g30, g60, g120, fm, wx:{...wx}, fems:{...fems}, dm1, windDir, crown };

@@ -27,7 +27,7 @@ export function calcFWI(t, rh, w) {
 
 export function getRating(f) {
   if(f==null) return{lbl:'—',c:'var(--muted)',pct:0,lvl:-1,summary:'Awaiting live weather data...'};
-  if(f<20)   return{lbl:'LOW',c:'var(--green)',pct:f/20*20,lvl:0,summary:'Low fire danger. Fuels relatively moist. Normal crew protocols in effect.'};
+  if(f<20)   return{lbl:'LOW',c:'var(--green)',pct:f/20*20,lvl:0,summary:'Low fire danger. Weather is not driving fire behavior right now. Normal crew protocols in effect.'};
   if(f<40)   return{lbl:'MODERATE',c:'var(--yellow)',pct:20+(f-20)/20*20,lvl:1,summary:'Moderate danger. Unattended fires may escape. Identify escape routes and safety zones.'};
   if(f<60)   return{lbl:'HIGH',c:'var(--orange)',pct:40+(f-40)/20*20,lvl:2,summary:'High danger. Fires start easily, spread quickly on slopes and ridges. LCES required.'};
   if(f<80)   return{lbl:'VERY HIGH',c:'var(--red)',pct:60+(f-60)/20*20,lvl:3,summary:'Very high danger. Rapid spread, spotting likely. Crew safety is priority — no fire is worth a life.'};
@@ -35,7 +35,12 @@ export function getRating(f) {
 }
 
 function buildDangerSummary(r, wx, fm) {
-  if (r.lvl < 2) return r.summary; // LOW / MODERATE — static is fine
+  if (r.lvl < 2) {
+    // FWI is weather-only — calm wind can rate LOW while fine fuels are critically dry
+    if (fm.fm1 != null && fm.fm1 < 8)
+      return `${r.lbl === 'LOW' ? 'Low' : 'Moderate'} weather-driven rating, but 1-hr fuels are at ${fm.fm1}% — fires will start easily and spread fast if wind picks up. Don't let a calm day set expectations.`;
+    return r.summary;
+  }
 
   const {rh, wind} = wx;
   const {fm1} = fm;
@@ -64,9 +69,9 @@ export function recalc() {
   document.getElementById('dBar').style.cssText = `width:${Math.max(1,r.pct)}%;background:${r.c}`;
   ['dl0','dl1','dl2','dl3','dl4'].forEach((id,i)=>document.getElementById(id).classList.toggle('act',i===r.lvl));
 
-  const ip = wx.temp&&wx.rh&&fm.fm1?Math.round(Math.max(0,Math.min(100,100*(1-fm.fm1/30)*(1+(wx.temp-60)/120)*(1-wx.rh/100)))):null;
-  const si = wx.wind&&fm.fm1?Math.round(Math.max(0,wx.wind*(1-fm.fm1/30)*1.2)):null;
-  const erc = fm.erc??(wx.temp&&fm.fm10&&fm.fm100?Math.round(Math.max(0,100*(1-fm.fm10/40)*(1-fm.fm100/50)*(1+(wx.temp-60)/120))):null);
+  const ip = wx.temp!=null&&wx.rh!=null&&fm.fm1!=null?Math.round(Math.max(0,Math.min(100,100*(1-fm.fm1/30)*(1+(wx.temp-60)/120)*(1-wx.rh/100)))):null;
+  const si = wx.wind!=null&&fm.fm1!=null?Math.round(Math.max(0,wx.wind*(1-fm.fm1/30)*1.2)):null;
+  const erc = fm.erc??(wx.temp!=null&&fm.fm10!=null&&fm.fm100!=null?Math.round(Math.max(0,100*(1-fm.fm10/40)*(1-fm.fm100/50)*(1+(wx.temp-60)/120))):null);
   const bi = fm.bi??null;
 
   const setFact = (cid, vid, val, disp) => {

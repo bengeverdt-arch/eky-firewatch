@@ -76,10 +76,10 @@ const FBFM40 = {
   183: { name: 'TL3 - Mod Conifer Litter',             group: 'TL', burnable: true, desc: 'Moderate conifer litter; low spread' },
   184: { name: 'TL4 - Small Downed Logs',              group: 'TL', burnable: true, desc: 'Conifer litter with small logs; moderate intensity' },
   185: { name: 'TL5 - High Conifer Litter',            group: 'TL', burnable: true, desc: 'Heavy conifer litter; moderate spread and intensity' },
-  186: { name: 'TL6 - High Broadleaf Litter',          group: 'TL', burnable: true, desc: 'Heavy broadleaf litter; fast spread when dry' },
-  187: { name: 'TL7 - Large Downed Logs',              group: 'TL', burnable: true, desc: 'Conifer litter with large logs; high intensity' },
+  186: { name: 'TL6 - Mod Broadleaf Litter',           group: 'TL', burnable: true, desc: 'Moderate broadleaf litter; fast spread when dry - common EKY hardwoods' },
+  187: { name: 'TL7 - Large Downed Logs',              group: 'TL', burnable: true, desc: 'Litter with large downed logs; high intensity' },
   188: { name: 'TL8 - Long Needle Litter',             group: 'TL', burnable: true, desc: 'Long-needle litter; fast spread, moderate intensity' },
-  189: { name: 'TL9 - Very High Broadleaf Litter',     group: 'TL', burnable: true, desc: 'Very heavy broadleaf litter; fast spread when dry - common EKY hardwoods' },
+  189: { name: 'TL9 - Very High Broadleaf Litter',     group: 'TL', burnable: true, desc: 'Very heavy broadleaf litter; fast spread when dry' },
   // SB - Slash-Blowdown
   201: { name: 'SB1 - Low Slash',              group: 'SB', burnable: true,  desc: 'Light logging slash; moderate spread' },
   202: { name: 'SB2 - Mod Slash',              group: 'SB', burnable: true,  desc: 'Moderate slash; high intensity' },
@@ -562,7 +562,10 @@ async function handleForecast(url) {
     const worstRH  = Math.min(...rhVals);
     const wndDelta = wndVals.length >= 2 ? wndVals[wndVals.length - 1] - wndVals[0] : 0;
 
-    if (worstRH < 25 && wndDelta > 5)
+    const maxWnd   = wndVals.length ? Math.max(...wndVals) : 0;
+
+    // "Increasing winds" only counts once wind is strong enough to matter (≥12 mph)
+    if (worstRH < 25 && wndDelta > 5 && maxWnd >= 12)
       trend = `Critical: RH dropping to ${worstRH}% with increasing winds - potential for rapid fire growth and erratic behavior.`;
     else if (worstRH < 25)
       trend = `Critical: RH falling to ${worstRH}% - fire behavior will be erratic and difficult to predict during low-humidity periods.`;
@@ -572,7 +575,7 @@ async function handleForecast(url) {
       trend = `Drying trend - RH dropping ${Math.abs(Math.round(rhDelta))}% over forecast period. Monitor fuel moisture before any burn operations.`;
     else if (rhDelta > 15)
       trend = `Improving conditions - RH rising ${Math.round(rhDelta)}% over forecast period. Fire behavior risk decreasing.`;
-    else if (wndDelta > 10)
+    else if (wndDelta > 10 && maxWnd >= 12)
       trend = `Wind increasing trend - stronger gusts expected later in forecast. Watch for spotting potential and short-range spread.`;
   }
 

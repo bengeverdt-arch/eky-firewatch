@@ -8,6 +8,7 @@ import { initLeafletMap, loadFireData, toggleMapLayer, swapBasemap, toggleImager
 import { getLocation, setManualLocation, clearManualLocation } from './geo.js';
 import { recalc } from './calc.js';
 import { fetchFireBrief, openBrief, closeBrief } from './firebrief.js';
+import { openGlossary, closeGlossary, initGlossary } from './glossary.js';
 import { computeRead, openRead, closeRead, setSlopeRead, clearReadIgnition, setFuelOverride } from './read.js';
 
 // ── Clock ──
@@ -75,6 +76,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
   DIAG.info('INIT','Dashboard loaded, initializing Leaflet map');
   setSplash('INITIALIZING...', 5);
+  initGlossary();
   initLeafletMap();
   loadAll();
   setInterval(loadAll, 10*60*1000); // auto-refresh every 10 minutes
@@ -101,3 +103,5 @@ window.stepRadar            = stepRadar;
 window.openBrief      = openBrief;
 window.closeBrief     = closeBrief;
 window.toggleTheme    = toggleTheme;
+window.openGlossary   = openGlossary;
+window.closeGlossary  = closeGlossary;

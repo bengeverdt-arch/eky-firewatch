@@ -53,8 +53,8 @@
             <option value="183">TL3 · Moderate Load Conifer Litter</option>
             <option value="184">TL4 · Small Downed Logs</option>
             <option value="185">TL5 · High Load Conifer Litter</option>
-            <option value="186">TL6 · Mod. Load Broadleaf (mesic)</option>
-            <option value="187">TL7 · Heavy Load Broadleaf Litter</option>
+            <option value="186">TL6 · Mod. Load Broadleaf Litter</option>
+            <option value="187">TL7 · Large Downed Logs</option>
             <option value="188">TL8 · Long-Needle Litter</option>
             <option value="189">TL9 · Very High Load Broadleaf</option>
           </optgroup>
@@ -136,18 +136,18 @@
       <div class="read-stitle">1-HOUR BEHAVIOR</div>
       <div class="read-metric-grid">
         <div class="read-metric">
-          <div class="rm-lbl">RATE OF SPREAD</div>
+          <div class="rm-lbl" data-term="ROS">RATE OF SPREAD</div>
           <div class="rm-val" id="rROS">—</div>
           <div class="rm-sub" id="rROSmph">—</div>
         </div>
         <div class="read-metric">
-          <div class="rm-lbl">FLAME LENGTH</div>
+          <div class="rm-lbl" data-term="FL">FLAME LENGTH</div>
           <div class="rm-val" id="rFlame">—</div>
           <div class="rm-sub" id="rLabel">—</div>
         </div>
       </div>
       <div class="read-ib-row">
-        <span class="rm-lbl">FIRELINE INTENSITY</span>
+        <span class="rm-lbl" data-term="FLI">FIRELINE INTENSITY</span>
         <span id="rIb" style="font-family:var(--mono);font-size:11px;color:var(--muted)">—</span>
       </div>
     </div>
@@ -178,7 +178,7 @@
     <div class="read-section">
       <div class="read-stitle">HAZARD ASSESSMENT</div>
       <div class="read-crown-block">
-        <div class="rc-lbl">CROWN FIRE</div>
+        <div class="rc-lbl" data-term="CROWN">CROWN FIRE</div>
         <div id="rCrownLabel" class="rc-val">—</div>
         <div id="rCrownSub"   class="rc-sub">Awaiting data</div>
       </div>
@@ -200,14 +200,26 @@
     <div class="briefhead">
       <div>
         <span class="brieftitle">NWS FIRE WEATHER BRIEF</span>
-        <span class="brief-meta-line" id="briefMeta">LMK · Loading...</span>
+        <span class="brief-meta-line" id="briefMeta">Loading...</span>
       </div>
       <button class="diagclose" onclick="closeBrief()">✕ CLOSE</button>
     </div>
     <div class="briefbody">
       <div class="brief-alert-banner" id="briefAlert"></div>
-      <div class="brief-text" id="briefText">Loading fire weather brief from NWS Louisville (LMK)...</div>
+      <div class="brief-text" id="briefText">Loading fire weather brief for your fire weather zone...</div>
     </div>
+  </div>
+</div>
+
+<!-- GLOSSARY PANEL -->
+<div id="glossPanel" class="hidden" onclick="if(event.target===this)closeGlossary()">
+  <div class="glossbox">
+    <div class="glosshead">
+      <span class="glosstitle">GLOSSARY</span>
+      <input id="glossSearch" type="search" placeholder="Search terms…" autocomplete="off">
+      <button class="diagclose" onclick="closeGlossary()">✕ CLOSE</button>
+    </div>
+    <div class="glossbody" id="glossList"></div>
   </div>
 </div>
 
@@ -238,11 +250,12 @@
     </div>
   </div>
   <div class="hmeta">
-    <div class="hbadge"><span class="hblbl">RAWS</span><span class="hbval" id="hRaws">—</span></div>
+    <div class="hbadge"><span class="hblbl" data-term="RAWS">RAWS</span><span class="hbval" id="hRaws">—</span></div>
     <div class="hbadge"><span class="hblbl">UPDATED</span><span class="hbval" id="hUpdated">—</span></div>
     <div class="livepill"><div class="ldot"></div><span>NWS + FEMS</span></div>
     <button class="briefbtn" id="briefBtn" onclick="openBrief()">📋 FIRE BRIEF</button>
     <button class="themebtn" id="themeBtn" onclick="toggleTheme()">☀ DAY MODE</button>
+    <button class="glossbtn" onclick="openGlossary()">? GLOSSARY</button>
     <button class="diagbtn" onclick="openDiag()">🔧 DIAGNOSTICS</button>
     <div class="hclock" id="clk"></div>
   </div>
@@ -259,7 +272,7 @@
     <div class="wxloc">
       <div>
         <div class="wxlocname" id="wxLocName">LONDON, KY</div>
-        <div class="wxlocsub" id="wxLocSub">LAUREL CO · 37.129°N 84.083°W · ~1145 FT</div>
+        <div class="wxlocsub" id="wxLocSub">LAUREL CO · 37.129°N 84.083°W · DEFAULT</div>
       </div>
       <div class="wxloc-actions">
         <button class="loc-action-btn" onclick="window.useGPS()" title="Use GPS">⊕ GPS</button>
@@ -273,7 +286,7 @@
         <span class="wcsrc" id="wTempSrc"></span>
       </div>
       <div class="wxcard" style="--cc:#0090ff">
-        <span class="wclbl">Rel. Humidity</span>
+        <span class="wclbl" data-term="RH">Rel. Humidity</span>
         <span class="wcval" id="wRH">--</span><span class="wcunit">%</span>
         <span class="wcsub" id="wRHSub">—</span>
         <span class="wcsrc" id="wRHSrc"></span>
@@ -291,7 +304,7 @@
         <span class="wcsrc" id="wGustSrc"></span>
       </div>
       <div class="wxcard" style="--cc:#00b894">
-        <span class="wclbl">Dewpoint</span>
+        <span class="wclbl" data-term="DEW">Dewpoint</span>
         <span class="wcval" id="wDew">--</span><span class="wcunit">°F</span>
         <span class="wcsub" id="wDewSub">—</span>
         <span class="wcsrc" id="wDewSrc"></span>
@@ -306,7 +319,7 @@
     <div class="wxst" id="wxSt">NWS STATION: <span id="stName">loading...</span></div>
     <div id="alertBox"></div>
     <div class="fmsect">
-      <div class="fmtitle">DEAD FUEL MOISTURE</div>
+      <div class="fmtitle"><span data-term="FM">DEAD FUEL MOISTURE</span></div>
       <div style="padding:8px 17px 4px;border-bottom:1px solid var(--border)">
   <select id="rawsSelect" onchange="changeStation(this.value)"
     style="width:100%;background:var(--s2);border:1px solid var(--border2);color:var(--text);
@@ -332,23 +345,23 @@
 </div>
       <div id="fmSrc" class="fmsrc" style="color:var(--muted);font-style:italic;font-family:var(--mono);font-size:9px">Fetching FEMS RAWS data...</div>
       <div class="fmbars">
-        <div class="fmrow"><span class="fmlbl">1-hr</span><div class="fmtrack"><div class="fmfill" id="fm1b"></div></div><span class="fmval" id="fm1v">—</span></div>
-        <div class="fmrow"><span class="fmlbl">10-hr</span><div class="fmtrack"><div class="fmfill" id="fm10b"></div></div><span class="fmval" id="fm10v">—</span></div>
-        <div class="fmrow"><span class="fmlbl">100-hr</span><div class="fmtrack"><div class="fmfill" id="fm100b"></div></div><span class="fmval" id="fm100v">—</span></div>
-        <div class="fmrow"><span class="fmlbl">1000-hr</span><div class="fmtrack"><div class="fmfill" id="fm1000b"></div></div><span class="fmval" id="fm1000v">—</span></div>
+        <div class="fmrow"><span class="fmlbl" data-term="1HR">1-hr</span><div class="fmtrack"><div class="fmfill" id="fm1b"></div></div><span class="fmval" id="fm1v">—</span></div>
+        <div class="fmrow"><span class="fmlbl" data-term="10HR">10-hr</span><div class="fmtrack"><div class="fmfill" id="fm10b"></div></div><span class="fmval" id="fm10v">—</span></div>
+        <div class="fmrow"><span class="fmlbl" data-term="100HR">100-hr</span><div class="fmtrack"><div class="fmfill" id="fm100b"></div></div><span class="fmval" id="fm100v">—</span></div>
+        <div class="fmrow"><span class="fmlbl" data-term="1000HR">1000-hr</span><div class="fmtrack"><div class="fmfill" id="fm1000b"></div></div><span class="fmval" id="fm1000v">—</span></div>
       </div>
       <div id="fmContext" class="fmctx"></div>
       <div class="fmextra">
-        <div class="fmextra-cell"><div class="fmextra-lbl">ERC</div><div class="fmextra-val" id="fmERC">—</div></div>
-        <div class="fmextra-cell"><div class="fmextra-lbl">BI</div><div class="fmextra-val" id="fmBI">—</div></div>
-        <div class="fmextra-cell"><div class="fmextra-lbl">KBDI</div><div class="fmextra-val" id="fmKBDI">—</div></div>
+        <div class="fmextra-cell"><div class="fmextra-lbl" data-term="ERC">ERC</div><div class="fmextra-val" id="fmERC">—</div></div>
+        <div class="fmextra-cell"><div class="fmextra-lbl" data-term="BI">BI</div><div class="fmextra-val" id="fmBI">—</div></div>
+        <div class="fmextra-cell"><div class="fmextra-lbl" data-term="KBDI">KBDI</div><div class="fmextra-val" id="fmKBDI">—</div></div>
       </div>
     </div>
   </div>
 
   <!-- DANGER PANEL -->
   <div class="panel dangp">
-    <div class="ph"><span class="ptitle">FIRE DANGER INDEX</span><span class="pbadge">NFDRS / FOSBERG FWI</span></div>
+    <div class="ph"><span class="ptitle">FIRE DANGER INDEX</span><span class="pbadge" data-term="FWI">FOSBERG FWI + NFDRS</span></div>
     <div class="dangbody">
       <div class="dangmain">
         <div>
@@ -366,10 +379,10 @@
         </div>
       </div>
       <div class="factgrid">
-        <div class="fcard" id="fc0"><span class="fcname">Ignition Prob.</span><span class="fcval" id="fv0">—</span><span class="fcdesc">% chance</span></div>
-        <div class="fcard" id="fc1"><span class="fcname">Spread Index</span><span class="fcval" id="fv1">—</span><span class="fcdesc">0–100 scale</span></div>
-        <div class="fcard" id="fc2"><span class="fcname">Energy Release</span><span class="fcval" id="fv2">—</span><span class="fcdesc">ERC from RAWS</span></div>
-        <div class="fcard" id="fc3"><span class="fcname">Burning Index</span><span class="fcval" id="fv3">—</span><span class="fcdesc">BI from RAWS</span></div>
+        <div class="fcard" id="fc0"><span class="fcname" data-term="IGNPROB">Ignition Prob.</span><span class="fcval" id="fv0">—</span><span class="fcdesc">% chance</span></div>
+        <div class="fcard" id="fc1"><span class="fcname" data-term="SPREADIDX">Spread Index</span><span class="fcval" id="fv1">—</span><span class="fcdesc">0–100 scale</span></div>
+        <div class="fcard" id="fc2"><span class="fcname" data-term="ERC">Energy Release</span><span class="fcval" id="fv2">—</span><span class="fcdesc">ERC from RAWS</span></div>
+        <div class="fcard" id="fc3"><span class="fcname" data-term="BI">Burning Index</span><span class="fcval" id="fv3">—</span><span class="fcdesc">BI from RAWS</span></div>
       </div>
       <div id="fuelModelBar" style="display:none;padding:10px 16px 12px;border-top:1px solid var(--border)">
         <div style="font-family:var(--mono);font-size:8px;letter-spacing:1.5px;color:var(--muted);margin-bottom:4px">FUEL MODEL AT YOUR LOCATION · LANDFIRE 2024</div>
@@ -402,7 +415,7 @@
   <div class="panel fcastp">
     <div class="ph">
       <span class="ptitle">5-DAY FIRE WEATHER FORECAST</span>
-      <span class="pbadge">NWS · LONDON KY</span>
+      <span class="pbadge">NWS + FEMS</span>
     </div>
     <div class="fcastbody">
       <div class="fcastgrid" id="fcastGrid">
@@ -410,6 +423,7 @@
           <span style="font-family:var(--mono);font-size:10px;color:var(--muted)">Loading forecast...</span>
         </div>
       </div>
+      <div class="fcast-src" id="fcastFemsSrc" style="display:none"></div>
       <div class="fcasttrend" id="fcastTrend">Loading trend analysis...</div>
       <div id="frontNote" class="front-note" style="display:none"></div>
     </div>
@@ -466,7 +480,7 @@
       <a class="ql" href="https://kdf.firesponse.com/public/" target="_blank"><span class="qlico">🏛️</span><span><span class="qln">KDF Fire Response</span><span class="qld">Official KY state fire map</span></span></a>
       <a class="ql" href="https://inciweb.wildfire.gov/" target="_blank"><span class="qlico">🗺️</span><span><span class="qln">InciWeb</span><span class="qld">Active incident reports</span></span></a>
       <a class="ql" href="https://firms.modaps.eosdis.nasa.gov/map/#d:24hrs;@-83.0,37.5,8z" target="_blank"><span class="qlico">🛰️</span><span><span class="qln">NASA FIRMS</span><span class="qld">Satellite thermal detections</span></span></a>
-      <a class="ql" href="https://www.weather.gov/lmk/fire_weather" target="_blank"><span class="qlico">🌬️</span><span><span class="qln">NWS Fire Weather</span><span class="qld">Red Flag Warnings / LMK</span></span></a>
+      <a class="ql" href="https://www.weather.gov/jkl/fire" target="_blank"><span class="qlico">🌬️</span><span><span class="qln">NWS Fire Weather</span><span class="qld">Red Flag Warnings / JKL</span></span></a>
       <a class="ql" href="https://gacc.nifc.gov/sacc/" target="_blank"><span class="qlico">🔥</span><span><span class="qln">SACC</span><span class="qld">Southern Area GACC (KY)</span></span></a>
       <a class="ql" href="https://fems.fs2c.usda.gov/ui" target="_blank"><span class="qlico">📊</span><span><span class="qln">FEMS</span><span class="qld">RAWS &amp; NFDRS fire danger</span></span></a>
       <a class="ql" href="https://www.fs.usda.gov/daniel-boone" target="_blank"><span class="qlico">🌲</span><span><span class="qln">Daniel Boone NF</span><span class="qld">USFS Region 8</span></span></a>

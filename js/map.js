@@ -84,7 +84,7 @@ export function initLeafletMap() {
   renderRawsMarkers();
 
   DIAG.ok('MAP', 'Leaflet initialized');
-  loadFireData();
+  // Fire data is loaded by loadAll() — not here, to avoid a duplicate fetch at startup
 }
 
 // ── User location marker ──
@@ -98,7 +98,9 @@ function makeUserIcon() {
 }
 
 function makeUserPopup() {
-  const src = state.locationSource === 'gps' ? 'GPS location' : 'London KY (default)';
+  const src = state.locationSource === 'gps'    ? 'GPS location'
+            : state.locationSource === 'manual' ? 'Pinned location'
+            : 'London KY (default)';
   return `<div style="font-family:monospace;font-size:11px;line-height:1.5">
     <b style="color:#00e5a0">${src}</b><br>
     ${state.LAT.toFixed(4)}°N · ${Math.abs(state.LON).toFixed(4)}°W
@@ -139,7 +141,7 @@ function makeRawsIcon(isActive) {
 
 function makeRawsPopup(s) {
   const isActive = state.FEMS_STATION === s.id;
-  const distStr  = (state.locationSource === 'gps')
+  const distStr  = (state.locationSource !== 'default')
     ? `${haverMi(state.LAT, state.LON, s.lat, s.lon).toFixed(1)} mi from you · ` : '';
   const action   = isActive
     ? `<span style="color:#00e5a0">✓ Currently selected</span>`
@@ -221,7 +223,7 @@ export async function loadFireData() {
   firmsGroup.clearLayers();
   irwinGroup.clearLayers();
   perimGroup.clearLayers();
-  let fires = 0;
+  let hotspots = 0, incidents = 0;
 
   const [irwinData, firmsData, perimData] = await Promise.all([
     workerFetch('/fires', 'MAP-IRWIN'),
@@ -251,7 +253,7 @@ export async function loadFireData() {
         County: ${p.POOCounty || '—'}, ${p.POOState || '—'}
       </div>`);
       irwinMarkers.push(m);
-      fires++;
+      incidents++;
     });
     irwinGroup.addLayers(irwinMarkers);
   }
@@ -281,7 +283,7 @@ export async function loadFireData() {
         Date: ${p.acq_date || '—'}
       </div>`);
       firmsMarkers.push(m);
-      fires++;
+      hotspots++;
     });
     firmsGroup.addLayers(firmsMarkers);
   }
@@ -325,9 +327,9 @@ export async function loadFireData() {
   }
 
   if (statusEl) {
-    statusEl.textContent = fires > 0
-      ? `${fires} active fire detections in region · Updated ${new Date().toLocaleTimeString()}`
-      : `No active fire detections in region · Checked ${new Date().toLocaleTimeString()}`;
+    // IRWIN/WFIGS is year-to-date (includes out/contained fires) — don't call it "active"
+    statusEl.textContent =
+      `${hotspots} satellite hotspots (48 hr) · ${incidents} incidents year-to-date · Updated ${new Date().toLocaleTimeString()}`;
   }
 }
 

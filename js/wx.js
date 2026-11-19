@@ -26,8 +26,14 @@ export async function fetchNWS() {
   document.getElementById('stName').textContent =
     `${data.station?.name || '—'} (${data.station?.id || '—'})`;
   document.getElementById('hRaws').textContent = data.station?.id || '—';
-  document.getElementById('wxLocName').textContent = data.station?.name || 'UNKNOWN';
-  document.getElementById('wxLocSub').textContent = `${state.LAT.toFixed(3)}°N ${Math.abs(state.LON).toFixed(3)}°W`;
+  // Location heading describes WHERE the data is for, not which station reported it
+  const srcLbl = { gps:'GPS', manual:'Manual' }[state.locationSource] || 'Default';
+  document.getElementById('wxLocName').textContent =
+    state.locationSource === 'gps' ? 'YOUR LOCATION'
+    : state.locationSource === 'manual' ? 'PINNED LOCATION'
+    : 'LONDON, KY';
+  document.getElementById('wxLocSub').textContent =
+    `${state.LAT.toFixed(3)}°N ${Math.abs(state.LON).toFixed(3)}°W · ${srcLbl}`;
 
   const ts = data.timestamp ? new Date(data.timestamp) : null;
   if(ts) document.getElementById('hUpdated').textContent =
@@ -35,7 +41,7 @@ export async function fetchNWS() {
     ts.toLocaleDateString('en-US',{month:'short',day:'numeric'});
 
   updateWxCards();
-  if(state.wx.windDirDeg != null) autoWindDir(state.wx.windDirDeg);
+  if(state.wx.windDirDeg != null && state.wx.wind !== 0) autoWindDir(state.wx.windDirDeg);
 
   // Show per-parameter source attribution under each wx card
   if (data.sources) showWxSources(data.sources);
@@ -45,9 +51,10 @@ export async function fetchNWS() {
 }
 
 export function setWxFallback() {
-  DIAG.warn('NWS','Using hardcoded fallback values — wx data unavailable');
-  state.wx = {temp:72,rh:38,wind:12,gust:18,dew:42,precip:0,windDirDeg:225};
-  document.getElementById('stName').textContent='API unavailable — estimated values';
+  // No fake numbers — blank cards are safer than plausible-looking made-up weather
+  DIAG.warn('NWS','Weather data unavailable — cards blanked');
+  state.wx = {temp:null,rh:null,wind:null,gust:null,dew:null,precip:null,windDirDeg:null};
+  document.getElementById('stName').textContent='NWS unavailable — no current observations';
   document.getElementById('hRaws').textContent='OFFLINE';
   updateWxCards();
 }
@@ -59,11 +66,12 @@ export function updateWxCards() {
   setV('wRH', wx.rh, c_RH);
   document.getElementById('wRHSub').textContent = wx.rh!=null?(wx.rh<25?'⚠ CRITICALLY LOW':wx.rh<35?'LOW':wx.rh<60?'Moderate':'High'):'—';
   setV('wWind', wx.wind, c_W);
-  document.getElementById('wWindDir').textContent = wx.windDirDeg!=null?`FROM ${d2c(wx.windDirDeg)}`:'—';
+  document.getElementById('wWindDir').textContent =
+    wx.wind === 0 ? 'CALM' : wx.windDirDeg!=null ? `FROM ${d2c(wx.windDirDeg)}` : '—';
   setV('wGust', wx.gust!=null?wx.gust:'N/A', v=>v==='N/A'?'var(--muted)':c_W(v));
   setV('wDew', wx.dew, ()=>'#00b894');
   document.getElementById('wDewSub').textContent = wx.dew!=null?(wx.dew>50?'Humid':wx.dew>35?'Moderate':'Dry'):'—';
-  setV('wPrecip', wx.precip!=null?wx.precip.toFixed(2):'0.00', ()=>'#74b9ff');
+  setV('wPrecip', wx.precip!=null?wx.precip.toFixed(2):null, ()=>'#74b9ff');
   recalc();
 }
 

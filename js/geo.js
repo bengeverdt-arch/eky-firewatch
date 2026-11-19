@@ -1,11 +1,11 @@
 // ── Browser geolocation + RAWS auto-selection ──
+// resolveLocation() only decides WHERE (state.LAT/LON + RAWS station).
+// loadAll() in main.js does all data fetching afterward, once, in order.
 import { state, RAWS_STATIONS } from './state.js';
 import { DIAG } from './diag.js';
-import { fetchNWS } from './wx.js';
-import { fetchForecast } from './forecast.js';
-import { fetchFuelModel } from './fuelmodel.js';
-import { changeStation } from './fems.js';
-import { updateUserMarker } from './map.js';
+import { updateUserMarker, updateMapRawsSelection } from './map.js';
+
+const DEFAULT_LOC = { lat: 37.129, lon: -84.083 }; // London, KY
 
 function haverMi(lat1, lon1, lat2, lon2) {
   const R = 3958.8;
@@ -39,118 +39,80 @@ function scoreStation(s, lat, lon, userElev) {
   return distMi + elevDiff;
 }
 
-// ── Manual location (pin-drop) ──
+function gpsPosition() {
+  return new Promise(resolve => {
+    if (!navigator.geolocation) return resolve(null);
+    navigator.geolocation.getCurrentPosition(
+      pos => resolve(pos),
+      err => { DIAG.warn('GEO', `GPS unavailable (${err.message}) — using London KY default`); resolve(null); },
+      { timeout: 10000, maximumAge: 60000 }
+    );
+  });
+}
 
-export async function setManualLocation(lat, lon) {
-  state.LAT = lat;
-  state.LON = lon;
-  state.locationSource = 'manual';
-  localStorage.setItem('fwManualLoc', JSON.stringify({ lat, lon }));
-  DIAG.ok('GEO', `Manual pin: ${lat.toFixed(4)}, ${lon.toFixed(4)}`);
-
-  const locSub = document.getElementById('wxLocSub');
-  if (locSub) locSub.textContent = `${lat.toFixed(3)}°N ${Math.abs(lon).toFixed(3)}°W · Manual`;
-
-  updateUserMarker(lat, lon);
-
-  const userElev = await getUserElevation(lat, lon);
+// Pick best RAWS for the current location (no fetch — loadAll fetches FEMS after)
+async function selectRaws() {
+  const userElev = await getUserElevation(state.LAT, state.LON);
+  if (userElev != null) DIAG.info('GEO', `Ground elevation: ${Math.round(userElev)} ft`);
+  else DIAG.warn('GEO', 'Elevation unavailable — scoring by distance only');
 
   let best = null, bestScore = Infinity;
   for (const s of RAWS_STATIONS) {
-    const score = scoreStation(s, lat, lon, userElev);
-    if (score < bestScore) { bestScore = score; best = { ...s }; }
+    const score = scoreStation(s, state.LAT, state.LON, userElev);
+    if (score < bestScore) { bestScore = score; best = s; }
   }
   if (best && best.id !== state.FEMS_STATION) {
-    DIAG.ok('GEO', `RAWS auto-select: ${best.name}`);
-    await changeStation(best.id);
+    const distMi  = haverMi(state.LAT, state.LON, best.lat, best.lon).toFixed(1);
+    const elevStr = userElev != null ? `, your elev ~${Math.round(userElev)} ft` : '';
+    DIAG.ok('GEO', `Auto-selected RAWS: ${best.name} — ${distMi} mi, ${best.elev} ft${elevStr}`);
+    state.FEMS_STATION = best.id;
+    updateMapRawsSelection(best.id);
     const sel = document.getElementById('rawsSelect');
     if (sel) sel.value = best.id;
   }
-
-  await fetchNWS();
-  await fetchForecast();
-  fetchFuelModel(lat, lon);
 }
 
-export function clearManualLocation() {
-  localStorage.removeItem('fwManualLoc');
-  state.locationSource = 'default';
-  DIAG.info('GEO', 'Manual location cleared — requesting GPS');
-  getLocation();
-}
+// Decide location: saved manual pin → GPS → London default.
+// RAWS auto-select only runs when the location actually moved, so a station
+// the user picked by hand survives the 10-minute refresh.
+export async function resolveLocation() {
+  const prev = { lat: state.LAT, lon: state.LON, src: state.locationSource };
 
-export function getLocation() {
-  // Use saved manual location if present
+  let loc = null, src = 'default';
   const saved = localStorage.getItem('fwManualLoc');
   if (saved) {
     try {
       const { lat, lon } = JSON.parse(saved);
-      DIAG.info('GEO', `Restoring saved manual location: ${lat.toFixed(4)}, ${lon.toFixed(4)}`);
-      setManualLocation(lat, lon);
-      return;
+      if (typeof lat === 'number' && typeof lon === 'number') { loc = { lat, lon }; src = 'manual'; }
     } catch { localStorage.removeItem('fwManualLoc'); }
   }
-
-  if (!navigator.geolocation) {
-    DIAG.warn('GEO', 'Geolocation not supported — using London KY default');
-    fetchFuelModel(state.LAT, state.LON);
-    return;
+  if (!loc) {
+    DIAG.info('GEO', 'Requesting GPS location');
+    const pos = await gpsPosition();
+    if (pos) { loc = { lat: pos.coords.latitude, lon: pos.coords.longitude }; src = 'gps'; }
   }
-  DIAG.info('GEO', 'Requesting GPS location');
-  navigator.geolocation.getCurrentPosition(
-    async pos => {
-      state.LAT = pos.coords.latitude;
-      state.LON = pos.coords.longitude;
-      state.locationSource = 'gps';
-      DIAG.ok('GEO', `GPS: ${state.LAT.toFixed(4)}, ${state.LON.toFixed(4)}`);
+  if (!loc) loc = DEFAULT_LOC;
 
-      // Update location display
-      const locSub = document.getElementById('wxLocSub');
-      if (locSub) locSub.textContent =
-        `${state.LAT.toFixed(3)}°N ${Math.abs(state.LON).toFixed(3)}°W · GPS`;
+  state.LAT = loc.lat;
+  state.LON = loc.lon;
+  state.locationSource = src;
+  if (src !== 'default') DIAG.ok('GEO', `${src === 'gps' ? 'GPS' : 'Manual pin'}: ${loc.lat.toFixed(4)}, ${loc.lon.toFixed(4)}`);
 
-      // Update map marker for user's position
-      updateUserMarker(state.LAT, state.LON);
+  updateUserMarker(state.LAT, state.LON);
 
-      // Get ground elevation for smarter RAWS station matching
-      const userElev = await getUserElevation(state.LAT, state.LON);
-      if (userElev != null) {
-        DIAG.info('GEO', `Ground elevation: ${Math.round(userElev)} ft`);
-      } else {
-        DIAG.warn('GEO', 'Elevation unavailable — scoring by distance only');
-      }
+  const moved = !state._located || src !== prev.src ||
+    haverMi(prev.lat, prev.lon, state.LAT, state.LON) > 0.5;
+  state._located = true;
+  if (moved) await selectRaws();
+}
 
-      // Find best RAWS station
-      let best = null, bestScore = Infinity;
-      for (const s of RAWS_STATIONS) {
-        const score = scoreStation(s, state.LAT, state.LON, userElev);
-        if (score < bestScore) {
-          bestScore = score;
-          best = { ...s, distMi: haverMi(state.LAT, state.LON, s.lat, s.lon).toFixed(1) };
-        }
-      }
+// ── Manual location (pin-drop) ──
+export function setManualLocation(lat, lon) {
+  localStorage.setItem('fwManualLoc', JSON.stringify({ lat, lon }));
+  DIAG.ok('GEO', `Manual pin saved: ${lat.toFixed(4)}, ${lon.toFixed(4)}`);
+}
 
-      if (best && best.id !== state.FEMS_STATION) {
-        const elevStr = userElev != null ? `, your elev ~${Math.round(userElev)} ft` : '';
-        DIAG.ok('GEO',
-          `Auto-selected RAWS: ${best.name} — ${best.distMi} mi, ${best.elev} ft${elevStr}`);
-        await changeStation(best.id);
-        // Sync dropdown to match
-        const sel = document.getElementById('rawsSelect');
-        if (sel) sel.value = best.id;
-      }
-
-      // Re-fetch weather for the actual location
-      await fetchNWS();
-      await fetchForecast();
-
-      // Query LANDFIRE for fuel model at GPS point (READ Option B)
-      fetchFuelModel(state.LAT, state.LON);
-    },
-    err => {
-      DIAG.warn('GEO', `GPS unavailable (${err.message}) — using London KY default`);
-      fetchFuelModel(state.LAT, state.LON);
-    },
-    { timeout: 10000, maximumAge: 60000 }
-  );
+export function clearManualLocation() {
+  localStorage.removeItem('fwManualLoc');
+  DIAG.info('GEO', 'Manual location cleared — requesting GPS');
 }

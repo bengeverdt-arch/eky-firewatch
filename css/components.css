@@ -343,3 +343,33 @@
 .fm-override-select:focus{outline:none;border-color:var(--amber)}
 .fm-override-select option{background:#1a2035;color:#dde4f0}
 html.light .fm-override-select option{background:#e4e9f4;color:#1a2035}
+
+/* ── FORECAST: FEMS PREDICTED BLOCK ── */
+.fcast-fems{display:flex;flex-direction:column;gap:5px;border-top:1px dashed var(--border2);padding-top:6px}
+.fcast-fems-lbl{font-family:var(--mono);font-size:7px;letter-spacing:1.5px;color:var(--muted2)}
+.fcast-src{font-family:var(--mono);font-size:9px;color:var(--muted2);line-height:1.5}
+
+/* ── GLOSSARY ── */
+[data-term]{cursor:help;text-decoration:underline dotted;text-decoration-color:var(--muted2);text-underline-offset:2px}
+.glossbtn{font-family:var(--mono);font-size:10px;color:var(--muted);
+  background:var(--s2);border:1px solid var(--border2);
+  border-radius:3px;padding:4px 11px;cursor:pointer;letter-spacing:1px;transition:all .2s}
+.glossbtn:hover{color:var(--text);border-color:var(--border)}
+#glossPanel{position:fixed;inset:0;z-index:800;background:rgba(0,0,0,.85);
+  display:flex;align-items:center;justify-content:center;padding:20px}
+#glossPanel.hidden{display:none}
+.glossbox{background:var(--s1);border:1px solid var(--border2);border-radius:8px;
+  width:100%;max-width:720px;max-height:90vh;display:flex;flex-direction:column;overflow:hidden}
+.glosshead{display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:14px 18px;border-bottom:1px solid var(--border)}
+.glosstitle{font-family:var(--cond);font-size:18px;font-weight:700;letter-spacing:3px;color:var(--text)}
+#glossSearch{flex:1;max-width:260px;background:var(--s2);border:1px solid var(--border2);color:var(--text);
+  font-family:var(--mono);font-size:11px;padding:6px 9px;border-radius:3px}
+.glossbody{padding:6px 18px 18px;overflow-y:auto}
+.gloss-sec{font-family:var(--mono);font-size:9px;letter-spacing:2px;color:var(--accent);
+  text-transform:uppercase;margin:16px 0 6px}
+.gloss-item{padding:8px 10px;border:1px solid var(--border);border-radius:4px;margin-bottom:6px;
+  background:var(--s2);transition:border-color .3s,background .3s}
+.gloss-item.flash{border-color:var(--amber);background:rgba(255,171,0,.08)}
+.gloss-term{font-family:var(--mono);font-size:11px;color:var(--text);margin-bottom:3px}
+.gloss-def{font-family:var(--body);font-size:12px;color:var(--muted);line-height:1.5}
