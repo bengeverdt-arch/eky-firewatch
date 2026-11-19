@@ -17,19 +17,21 @@ export async function fetchFireBrief() {
 
   if (!data || !data.text) {
     DIAG.warn('FWF', 'No fire brief available');
-    if (metaEl) metaEl.textContent = 'LMK · Unavailable';
-    if (textEl) textEl.textContent = 'Fire weather brief unavailable. Check NWS Louisville directly.';
+    if (metaEl) metaEl.textContent = 'Unavailable';
+    if (textEl) textEl.textContent = 'Fire weather brief unavailable. Check NWS Jackson KY (weather.gov/jkl/fire) directly.';
     return;
   }
 
-  DIAG.ok('FWF', `Loaded FWF product ${data.productId}, issued ${data.issuedAt}`);
+  DIAG.ok('FWF', `Loaded FWF ${data.office} zone ${data.zone} (${data.filtered ? 'filtered' : 'full product — zone not found'}), issued ${data.issuedAt}`);
 
   if (metaEl) {
     const ts = data.issuedAt ? new Date(data.issuedAt) : null;
     const tsStr = ts
       ? ts.toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
       : '—';
-    metaEl.textContent = `${data.office || 'LMK'} · Issued ${tsStr}`;
+    const office = (data.office || '').replace(/^K/, '');
+    const area   = data.filtered && data.zoneAreas ? ` · ${data.zoneAreas}` : ' · full product';
+    metaEl.textContent = `${office} · Issued ${tsStr}${area}`;
   }
 
   // Detect RED FLAG / CRITICAL language
