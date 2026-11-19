@@ -2,6 +2,7 @@
 import { state } from './state.js';
 import { workerFetch } from './api.js';
 import { setSplash } from './diag.js';
+import { c_F } from './calc.js';
 
 // ── Front detection ──
 // Cardinal/intercardinal directions → degrees
