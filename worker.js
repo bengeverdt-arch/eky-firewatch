@@ -783,8 +783,7 @@ async function handleFemsClim(url) {
 
   const res = await fetch(apiUrl);
   if (!res.ok) return err('FEMS history fetch failed', `HTTP ${res.status}`);
-  const lines = (await res.text()).trim().split('
-');
+  const lines = (await res.text()).trim().split(/\r?\n/);
   if (lines.length < 2) return err('FEMS history empty');
 
   const header = lines[0].replace(/"/g, '').split(',').map(h => h.trim());
