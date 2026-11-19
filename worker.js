@@ -380,7 +380,6 @@ async function handleNWS(url) {
 async function handleFEMS(url) {
   const station = url.searchParams.get('station') || '157201';
   const now     = new Date();
-  const end     = new Date(now.getTime() + 86400000).toISOString().slice(0, 10);
   const start   = new Date(now.getTime() - 14 * 86400000).toISOString().slice(0, 10);
   // dataset=all returns observed rows (NFDRType "O") plus FEMS-predicted rows ("F")
   // for today through ~7 days out. Window end extends a week to capture the forecast.
