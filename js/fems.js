@@ -4,6 +4,13 @@ import { workerFetch } from './api.js';
 import { DIAG, setSplash } from './diag.js';
 import { recalc, c_F } from './calc.js';
 import { updateMapRawsSelection } from './map.js';
+import { setFemsForecast } from './forecast.js';
+
+function prevDay(ymd) {
+  const d = new Date(ymd + 'T12:00:00');
+  d.setDate(d.getDate() - 1);
+  return d.toLocaleDateString('en-CA');
+}
 
 export async function fetchFEMS() {
   setSplash('FETCHING FEMS RAWS FUEL MOISTURE...', 45);
