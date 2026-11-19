@@ -34,13 +34,17 @@ export async function fetchFEMS() {
     useFMEstimate(); return;
   }
 
-  const todayUTC = new Date().toISOString().slice(0, 10);
-  const isStale  = data.obsDate && data.obsDate < todayUTC;
+  // Local calendar date (en-CA formats as YYYY-MM-DD) — UTC flips to tomorrow in the evening
+  const todayLocal = new Date().toLocaleDateString('en-CA');
+  const isStale    = data.obsDate && data.obsDate < todayLocal;
   const srcLabel = isStale
-    ? `<span style="color:var(--amber);font-weight:600">⚠ FEMS RAWS — YESTERDAY'S DATA</span>`
+    ? `<span style="color:var(--amber);font-weight:600">⚠ FEMS RAWS — ${data.obsDate === prevDay(todayLocal) ? "YESTERDAY'S" : 'OLDER'} DATA</span>`
     : `<span style="color:var(--green);font-weight:600">✓ LIVE FEMS RAWS DATA</span>`;
+  const todayFx = data.forecast?.find(f => f.date === todayLocal);
   const staleNote = isStale
-    ? `<br><span style="color:var(--muted2);font-size:0.85em">Today's NFDRS obs posts ~1300 local — using ${data.obsDate} until then</span>`
+    ? `<br><span style="color:var(--muted2);font-size:0.85em">FEMS posts a full day's observation after the day ends — showing ${data.obsDate}.` +
+      (todayFx?.fm1 != null ? ` FEMS predicts today's 1-hr at <b style="color:var(--text)">${todayFx.fm1}%</b>, ERC ${Math.round(todayFx.erc)}.` : '') +
+      `</span>`
     : '';
   document.getElementById('fmSrc').innerHTML =
     `${srcLabel}<br>` +
