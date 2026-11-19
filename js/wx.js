@@ -85,7 +85,8 @@ export function showWxSources(sources) {
     const el = document.getElementById(elId);
     if (!el) continue;
     const s = sources[param];
-    el.textContent = s ? `${s.id} · ${s.distMi} mi${s.source === 'METAR' ? ' (METAR)' : ''}` : '';
+    const t = s?.time ? ' · ' + new Date(s.time).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}) : '';
+    el.textContent = s ? `${s.id} · ${s.distMi} mi${s.source === 'METAR' ? ' (METAR)' : ''}${t}` : '';
   }
 }
 

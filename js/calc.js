@@ -69,9 +69,7 @@ export function recalc() {
   document.getElementById('dBar').style.cssText = `width:${Math.max(1,r.pct)}%;background:${r.c}`;
   ['dl0','dl1','dl2','dl3','dl4'].forEach((id,i)=>document.getElementById(id).classList.toggle('act',i===r.lvl));
 
-  const ip = wx.temp!=null&&wx.rh!=null&&fm.fm1!=null?Math.round(Math.max(0,Math.min(100,100*(1-fm.fm1/30)*(1+(wx.temp-60)/120)*(1-wx.rh/100)))):null;
-  const si = wx.wind!=null&&fm.fm1!=null?Math.round(Math.max(0,wx.wind*(1-fm.fm1/30)*1.2)):null;
-  const erc = fm.erc??(wx.temp!=null&&fm.fm10!=null&&fm.fm100!=null?Math.round(Math.max(0,100*(1-fm.fm10/40)*(1-fm.fm100/50)*(1+(wx.temp-60)/120))):null);
+  const erc = fm.erc ?? null; // official FEMS value only — no invented fallback
   const bi = fm.bi??null;
 
   const setFact = (cid, vid, val, disp) => {
@@ -79,8 +77,6 @@ export function recalc() {
     const card = document.getElementById(cid); if(card) card.style.setProperty('--fc',c);
     const vel  = document.getElementById(vid);  if(vel)  { vel.textContent=disp??'—'; vel.style.color=c; }
   };
-  setFact('fc0','fv0',ip, ip!=null?ip+'%':null);
-  setFact('fc1','fv1',si, si);
   setFact('fc2','fv2',erc,erc);
   setFact('fc3','fv3',bi, bi);
 }

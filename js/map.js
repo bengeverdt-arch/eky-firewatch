@@ -327,9 +327,9 @@ export async function loadFireData() {
   }
 
   if (statusEl) {
-    // IRWIN/WFIGS is year-to-date (includes out/contained fires) — don't call it "active"
+    // Worker filters to current incidents (not out; <=7d, or <=30d and uncontained)
     statusEl.textContent =
-      `${hotspots} satellite hotspots (48 hr) · ${incidents} incidents year-to-date · Updated ${new Date().toLocaleTimeString()}`;
+      `${hotspots} satellite hotspots (48 hr) · ${incidents} current incidents · Updated ${new Date().toLocaleTimeString()}`;
   }
 }
 

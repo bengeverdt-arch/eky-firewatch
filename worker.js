@@ -303,6 +303,7 @@ async function handleNWS(url) {
           name:   s.name,
           distMi: Math.round(s.distMi * 10) / 10,
           source: 'NWS',
+          time:   s.obs?.timestamp ?? null,
         };
         break;
       }
@@ -345,6 +346,7 @@ async function handleNWS(url) {
                 name:   m.site || m.name || m.id,
                 distMi: Math.round(m._dist * 10) / 10,
                 source: 'METAR',
+                time:   m.obsTime ? new Date(m.obsTime * 1000).toISOString() : (m.reportTime ?? null),
               };
             }
           }
@@ -357,7 +359,9 @@ async function handleNWS(url) {
 
   return json({
     station:    { id: primary.id, name: primary.name },
-    timestamp:  stations[0].obs?.timestamp,
+    // Oldest time among the values actually shown — not just the nearest station's
+    timestamp:  Object.values(sources).map(s => s.time).filter(Boolean)
+                  .sort((a, b) => new Date(a) - new Date(b))[0] ?? stations[0].obs?.timestamp,
     temp:       composite.temp,
     rh:         composite.rh,
     wind:       composite.wind,
@@ -609,7 +613,7 @@ async function handleAlerts(url) {
 // ─────────────────────────────────────────────
 async function handleFires() {
   const bbox = '-89.5,36.4,-81.9,39.1';
-  const url  = `https://services3.arcgis.com/T4QMspbfLg3qTGWY/arcgis/rest/services/WFIGS_Incident_Locations_YearToDate/FeatureServer/0/query?where=1%3D1&outFields=IncidentName,IncidentTypeCategory,PercentContained,IncidentSize,POOState,POOCounty,UniqueFireIdentifier,FireDiscoveryDateTime,FireCause&geometry=${bbox}&geometryType=esriGeometryEnvelope&spatialRel=esriSpatialRelIntersects&inSR=4326&outSR=4326&f=geojson`;
+  const url  = `https://services3.arcgis.com/T4QMspbfLg3qTGWY/arcgis/rest/services/WFIGS_Incident_Locations_YearToDate/FeatureServer/0/query?where=1%3D1&outFields=IncidentName,IncidentTypeCategory,PercentContained,IncidentSize,POOState,POOCounty,UniqueFireIdentifier,FireDiscoveryDateTime,FireCause,FireOutDateTime,ContainmentDateTime&geometry=${bbox}&geometryType=esriGeometryEnvelope&spatialRel=esriSpatialRelIntersects&inSR=4326&outSR=4326&f=geojson`;
 
   const res = await fetch(url);
   if (!res.ok) return err('NIFC fires fetch failed', `HTTP ${res.status}`);
@@ -617,8 +621,21 @@ async function handleFires() {
   if (geojson?.error) return err('NIFC fires service error', JSON.stringify(geojson.error));
   if (!geojson?.features) return err('NIFC returned invalid GeoJSON', JSON.stringify(geojson).slice(0, 200));
 
+  // Keep only fires that matter now: not declared out, and either discovered in
+  // the last 7 days, or discovered in the last 30 days and not yet contained.
+  // (30-day cap: many KY incidents never get an out/containment date recorded.)
+  const DAY = 86400000, now = Date.now();
+  const current = geojson.features.filter(f => {
+    const p = f.properties;
+    if (p.FireOutDateTime) return false;
+    const age = p.FireDiscoveryDateTime ? now - p.FireDiscoveryDateTime : Infinity;
+    if (age <= 7 * DAY) return true;
+    const contained = p.ContainmentDateTime || (p.PercentContained ?? 0) >= 100;
+    return !contained && age <= 30 * DAY;
+  });
+
   // Normalize to stable field names used by map.js
-  const features = geojson.features.map(f => {
+  const features = current.map(f => {
     const p = f.properties;
     return {
       ...f,
@@ -641,6 +658,8 @@ async function handleFires() {
     features,
     type:     'FeatureCollection',
     source:   'NIFC WFIGS Incident Locations',
+    filter:   'not out; discovered <=7d, or <=30d and uncontained',
+    totalYTD: geojson.features.length,
     fetched:  new Date().toISOString(),
   });
 }

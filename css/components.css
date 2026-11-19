@@ -96,7 +96,7 @@
 .dbarlbls{display:flex;justify-content:space-between;
   font-family:var(--mono);font-size:8px;color:var(--muted);letter-spacing:.5px}
 .dbarlbls span.act{color:var(--text);font-weight:700}
-.factgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.factgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
 .fcard{background:var(--s2);border:1px solid var(--border);
   border-top:2px solid var(--fc,var(--border2));
   border-radius:4px;padding:10px 12px;display:flex;flex-direction:column;gap:3px}

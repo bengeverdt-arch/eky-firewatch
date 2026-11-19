@@ -33,10 +33,6 @@ const TERMS = [
     def:'Soil and duff dryness on a 0–800 scale (0 = saturated, 800 = maximum drought). Above 400: fire burns into the ground and holds heat after suppression. Above 600: deep burning, extended mop-up, stump holes.' },
   { key:'FWI',    sec:'Fire Danger Indices', term:'FWI — Fosberg Fire Weather Index',
     def:'A 0–100 index from temperature, RH, and wind only — no fuel data. This dashboard uses a simplified version for the danger rating. Treat as a weather-driven indicator, not an official NFDRS rating.' },
-  { key:'IGNPROB',sec:'Fire Danger Indices', term:'Ignition Probability (dashboard)',
-    def:'Dashboard estimate from 1-hr fuel moisture, temperature and RH. Not the official NFDRS IC — a rough guide to how easily fires start.' },
-  { key:'SPREADIDX', sec:'Fire Danger Indices', term:'Spread Index (dashboard)',
-    def:'Dashboard estimate from wind and 1-hr fuel moisture. Rough relative indicator, not the NFDRS Spread Component.' },
 
   // ── Weather ──
   { key:'RH',     sec:'Weather', term:'RH — Relative Humidity',
