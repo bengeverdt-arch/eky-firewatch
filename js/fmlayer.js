@@ -51,7 +51,7 @@ const dayDiff = (a, b) => Math.round((new Date(a + 'T12:00:00') - new Date(b + '
 async function loadStations() {
   if (stationData && Date.now() - stationAt < STALE_MS) return stationData;
   const ids = RAWS_STATIONS.map(s => s.id).join(',');
-  const d = await workerFetch(`/fm-stations?stations=${ids}`, 'FM-STATIONS');
+  const d = await workerFetch(`/fm-stations?stations=${ids}&v=2`, 'FM-STATIONS');
   if (d?.stations) { stationData = d.stations; stationAt = Date.now(); }
   return stationData;
 }
