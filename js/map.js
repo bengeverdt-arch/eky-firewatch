@@ -168,8 +168,34 @@ function makeRawsPopup(s) {
     <b style="color:#ffab00">${s.name}</b><br>
     ${s.agency} · ${s.region}<br>
     <span style="color:#888">${distStr}${s.elev.toLocaleString()} ft elev</span><br>
+    ${rawsFm ? makeRawsFmBlock(rawsFm[s.id]) : ''}
     ${action}
   </div>`;
+}
+
+function makeRawsFmBlock(fm) {
+  const f = x => x != null ? x.toFixed(1) + '%' : '—';
+  const row = (lbl, r) => r
+    ? `<span style="color:#888">${lbl}</span><br>
+       1-hr ${f(r.fm1)} · 10-hr ${f(r.fm10)}<br>100-hr ${f(r.fm100)} · 1000-hr ${f(r.fm1000)}<br>`
+    : `<span style="color:#888">${lbl}: no data</span><br>`;
+  const dayLbl = fm?.iso
+    ? 'FEMS forecast ' + new Date(fm.iso + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+    : 'FEMS forecast';
+  const obsLbl = fm?.obs ? `Last observed (${fm.obs.date})` : 'Last observed';
+  return `<div style="border-top:1px solid #444;margin:4px 0;padding-top:4px">
+    ${row(dayLbl, fm?.day)}${row(obsLbl, fm?.obs)}</div>`;
+}
+
+export function setRawsFm(map) {
+  rawsFm = map;
+  updateMapRawsSelection(state.FEMS_STATION);
+}
+
+export function ensureRawsVisible() {
+  if (!state.kyMap || state.kyMap.hasLayer(rawsGroup)) return;
+  state.kyMap.addLayer(rawsGroup);
+  document.getElementById('lyrRaws')?.classList.add('act');
 }
 
 function renderRawsMarkers() {
