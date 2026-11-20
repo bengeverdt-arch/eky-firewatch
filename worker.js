@@ -824,3 +824,146 @@ async function handleFemsClim(url) {
     bi:  bi.sort((a, b) => a - b),
   });
 }
+
+// ─────────────────────────────────────────────
+// FUEL MOISTURE MAP LAYERS
+// ─────────────────────────────────────────────
+
+// Dead fuel moisture for many RAWS in one FEMS request — latest observed row
+// plus FEMS-predicted rows (today → ~7 days) per station.
+async function handleFmStations(url) {
+  const ids = (url.searchParams.get('stations') || '')
+    .split(',').map(s => s.trim()).filter(s => /^\d+$/.test(s)).slice(0, 30);
+  if (!ids.length) return err('No valid station ids', '', 400);
+
+  const now   = new Date();
+  const start = new Date(now.getTime() - 4 * 86400000).toISOString().slice(0, 10);
+  const end   = new Date(now.getTime() + 8 * 86400000).toISOString().slice(0, 10);
+  const apiUrl = `https://fems.fs2c.usda.gov/api/ext-climatology/download-nfdr-daily-summary/?dataset=all&startDate=${start}&endDate=${end}&dataFormat=csv&stationIds=${ids.join(',')}&fuelModels=Y`;
+
+  const res = await fetch(apiUrl);
+  if (!res.ok) return err('FEMS fetch failed', `HTTP ${res.status}`);
+  const lines = (await res.text()).trim().split('\n').filter(l => l.trim());
+  if (lines.length < 2) return err('FEMS returned no rows');
+
+  const header = lines[0].replace(/"/g, '').split(',').map(h => h.trim());
+  const ci = name => header.indexOf(name);
+  const I = { name: ci('StationName'), date: ci('ObservationTime'), type: ci('NFDRType'), id: ci('StationId'),
+              fm1: ci('1HrFM'), fm10: ci('10HrFM'), fm100: ci('100HrFM'), fm1000: ci('1000HrFM') };
+  const num = (r, i) => {
+    if (i < 0) return null;
+    const n = parseFloat(r[i]);
+    return isNaN(n) ? null : Math.round(n * 10) / 10;
+  };
+
+  const stations = {};
+  for (const l of lines.slice(1)) {
+    const r = l.replace(/"/g, '').split(',').map(v => v.trim());
+    const id = r[I.id];
+    if (!id) continue;
+    const rec = { date: r[I.date], fm1: num(r, I.fm1), fm10: num(r, I.fm10), fm100: num(r, I.fm100), fm1000: num(r, I.fm1000) };
+    if (rec.fm1 == null && rec.fm10 == null) continue;
+    const st = stations[id] || (stations[id] = { name: r[I.name], obs: null, forecast: [] });
+    if (r[I.type] === 'F') st.forecast.push(rec);
+    else if (!st.obs || rec.date > st.obs.date) st.obs = rec;
+  }
+  for (const st of Object.values(stations)) st.forecast.sort((a, b) => a.date.localeCompare(b.date));
+
+  return json({ source: 'FEMS NFDRS (observed + FEMS forecast)', stations });
+}
+
+// WFAS (USFS) 100-hr dead fuel moisture forecast, 2.5 km NDFD grid.
+// Files are national (~11 MB each); we byte-range only the rows covering KY
+// and resample to a regular grid whose rows are evenly spaced in Web Mercator,
+// so the client can draw it as one image overlay without distortion.
+// (WFAS's 2.5 km 1000-hr grid is NOT used: on 2026-11-20 it read ~35% where
+// FEMS stations and WFAS's own station-based map read ~18%.)
+const WFAS_MOIST = 'https://www.wfas.net/data/moistures';
+const FMGRID_BOX = { s: 36.45, n: 39.2, w: -89.65, e: -81.9, step: 0.025 };
+
+async function handleFmGrid(url) {
+  const day = parseInt(url.searchParams.get('day') || '0', 10);
+  if (!(day >= 0 && day <= 6)) return err('day must be 0-6', '', 400);
+  const base = `${WFAS_MOIST}/fm100_day${day}`;
+
+  const hdrRes = await fetch(`${base}.hdr`);
+  if (!hdrRes.ok) return err('WFAS header fetch failed', `HTTP ${hdrRes.status}`);
+  const H = {};
+  for (const line of (await hdrRes.text()).split('\n')) {
+    const [k, v] = line.trim().split(/\s+/);
+    if (k) H[k.toLowerCase()] = v;
+  }
+  const nc = +H.ncols, nr = +H.nrows, cs = +H.cellsize, xll = +H.xllcorner, yll = +H.yllcorner;
+  const nodata = +H.nodata_value, little = (H.byteorder || 'lsbfirst').toLowerCase() === 'lsbfirst';
+  if (!nc || !nr || !cs) return err('WFAS header unreadable');
+
+  // NDFD Lambert Conformal Conic on a sphere (from the .prj): R 6371000,
+  // standard parallel 25°, origin 25°N, central meridian -95°.
+  const R = 6371000, p = 25 * Math.PI / 180, n = Math.sin(p);
+  const F = Math.cos(p) * Math.tan(Math.PI / 4 + p / 2) ** n / n;
+  const rho0 = R * F / Math.tan(Math.PI / 4 + p / 2) ** n;
+  const toRC = (lat, lon) => {
+    const rho = R * F / Math.tan(Math.PI / 4 + lat * Math.PI / 360) ** n;
+    const th = n * (lon + 95) * Math.PI / 180;
+    const x = rho * Math.sin(th), y = rho0 - rho * Math.cos(th);
+    return [nr - 1 - Math.floor((y - yll) / cs), Math.floor((x - xll) / cs)];
+  };
+
+  // Output grid: columns even in lon, rows even in Mercator Y
+  const B = FMGRID_BOX;
+  const mY = lat => Math.log(Math.tan(Math.PI / 4 + lat * Math.PI / 360));
+  const iY = y => (2 * Math.atan(Math.exp(y)) - Math.PI / 2) * 180 / Math.PI;
+  const nx = Math.round((B.e - B.w) / B.step);
+  const ny = Math.round((B.n - B.s) / B.step);
+  const yN = mY(B.n), yS = mY(B.s);
+
+  const idx = new Int32Array(nx * ny * 2);
+  let rMin = Infinity, rMax = -Infinity;
+  for (let j = 0; j < ny; j++) {
+    const lat = iY(yN - (j + 0.5) * (yN - yS) / ny);
+    for (let i = 0; i < nx; i++) {
+      const lon = B.w + (i + 0.5) * B.step;
+      const [r, c] = toRC(lat, lon);
+      idx[(j * nx + i) * 2] = r; idx[(j * nx + i) * 2 + 1] = c;
+      if (r < rMin) rMin = r;
+      if (r > rMax) rMax = r;
+    }
+  }
+  rMin = Math.max(0, rMin); rMax = Math.min(nr - 1, rMax);
+
+  const first = rMin * nc * 4, last = (rMax + 1) * nc * 4 - 1;
+  const fltRes = await fetch(`${base}.flt`, { headers: { Range: `bytes=${first}-${last}` } });
+  if (fltRes.status !== 206 && fltRes.status !== 200) return err('WFAS grid fetch failed', `HTTP ${fltRes.status}`);
+  const buf = await fltRes.arrayBuffer();
+  const dv = new DataView(buf);
+  const skip = fltRes.status === 200 ? first : 0; // server ignored Range → full file
+
+  // Values in tenths of a percent; -1 = no data (outside CONUS / water)
+  const vals = new Array(nx * ny);
+  for (let k = 0; k < nx * ny; k++) {
+    const r = idx[k * 2], c = idx[k * 2 + 1];
+    let v = -1;
+    if (r >= rMin && r <= rMax && c >= 0 && c < nc) {
+      const off = skip + ((r - rMin) * nc + c) * 4;
+      if (off + 4 <= buf.byteLength) {
+        const f = dv.getFloat32(off, little);
+        if (isFinite(f) && f !== nodata && f > 0 && f < 100) v = Math.round(f * 10);
+      }
+    }
+    vals[k] = v;
+  }
+
+  // Date the grid was produced (WFAS runs once each morning) → day 0 = that date
+  const lm = fltRes.headers.get('Last-Modified') || hdrRes.headers.get('Last-Modified');
+  const issued = lm ? new Date(lm).toLocaleDateString('en-CA', { timeZone: 'America/New_York' }) : null;
+  const valid = issued
+    ? new Date(new Date(issued + 'T12:00:00Z').getTime() + day * 86400000).toISOString().slice(0, 10)
+    : null;
+
+  return json({
+    source: 'USFS WFAS — NFDRS 100-hr dead fuel moisture forecast (NWS NDFD 2.5 km grid)',
+    var: 'fm100', day, issued, valid, lastModified: lm,
+    bounds: { s: B.s, n: B.n, w: B.w, e: B.e }, nx, ny, scale: 0.1,
+    values: vals,
+  });
+}
