@@ -97,6 +97,8 @@ window.enterPinMode         = () => enterPinMode((lat, lon) => { setManualLocati
 window.useGPS               = () => { clearManualLocation(); loadAll(); };
 window.toggleRadarPlay      = toggleRadarPlay;
 window.stepRadar            = stepRadar;
+window.toggleFmLayer        = toggleFmLayer;
+window.stepFmDay            = stepFmDay;
 window.openBrief      = openBrief;
 window.closeBrief     = closeBrief;
 window.toggleTheme    = toggleTheme;
