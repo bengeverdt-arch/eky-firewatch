@@ -136,7 +136,7 @@ export default {
         default:
           response = json({
             name: 'EKY Fire Watch API', version: '2.2',
-            endpoints: ['/nws', '/fems', '/forecast', '/alerts', '/fires', '/firms', '/perimeters', '/fire-brief', '/fems-clim', '/health'],
+            endpoints: ['/nws', '/fems', '/forecast', '/alerts', '/fires', '/firms', '/perimeters', '/fire-brief', '/fems-clim', '/fm-stations', '/fm-grid', '/health'],
           });
       }
     } catch (e) {
