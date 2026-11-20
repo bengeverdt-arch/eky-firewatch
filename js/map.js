@@ -175,9 +175,11 @@ function makeRawsPopup(s) {
 
 function makeRawsFmBlock(fm) {
   const f = x => x != null ? x.toFixed(1) + '%' : '—';
+  const hr = h => h == null ? '' : ` <span style="color:#888">@${h % 12 || 12}${h < 12 ? 'am' : 'pm'}</span>`;
   const row = (lbl, r) => r
     ? `<span style="color:#888">${lbl}</span><br>
-       1-hr ${f(r.fm1)} · 10-hr ${f(r.fm10)}<br>100-hr ${f(r.fm100)} · 1000-hr ${f(r.fm1000)}<br>`
+       Min 1-hr ${f(r.fm1)}${hr(r.t1)} · Min 10-hr ${f(r.fm10)}${hr(r.t10)}<br>
+       100-hr ${f(r.fm100)} · 1000-hr ${f(r.fm1000)}<br>`
     : `<span style="color:#888">${lbl}: no data</span><br>`;
   const dayLbl = fm?.iso
     ? 'FEMS forecast ' + new Date(fm.iso + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
