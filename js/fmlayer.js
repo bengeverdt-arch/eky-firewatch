@@ -59,7 +59,7 @@ async function loadStations() {
 async function loadGrid(wfasDay) {
   const c = gridCache[wfasDay];
   if (c && Date.now() - c.at < STALE_MS) return c.data;
-  const d = await workerFetch(`/fm-grid?day=${wfasDay}`, 'FM-GRID');
+  const d = await workerFetch(`/fm-grid?day=${wfasDay}&v=2`, 'FM-GRID');
   if (d?.values) {
     gridCache[wfasDay] = { data: d, at: Date.now() };
     if (wfasDay === 0 && d.issued) gridDay0Issued = d.issued;
