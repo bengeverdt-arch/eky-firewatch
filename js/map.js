@@ -202,7 +202,7 @@ function renderRawsMarkers() {
   rawsGroup.clearLayers();
   rawsMarkers = {};
   for (const s of RAWS_STATIONS) {
-    const m = L.marker([s.lat, s.lon], { icon: makeRawsIcon(s.id === state.FEMS_STATION) })
+    const m = L.marker([s.lat, s.lon], { icon: makeRawsIcon(s.id === state.FEMS_STATION, s.id) })
       .bindPopup(makeRawsPopup(s));
     m.addTo(rawsGroup);
     rawsMarkers[s.id] = m;
@@ -211,7 +211,7 @@ function renderRawsMarkers() {
 
 export function updateMapRawsSelection(id) {
   for (const [sid, marker] of Object.entries(rawsMarkers)) {
-    marker.setIcon(makeRawsIcon(sid === id));
+    marker.setIcon(makeRawsIcon(sid === id, sid));
     const s = RAWS_STATIONS.find(x => x.id === sid);
     if (s) marker.setPopupContent(makeRawsPopup(s));
   }
