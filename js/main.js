@@ -9,6 +9,7 @@ import { resolveLocation, setManualLocation, clearManualLocation } from './geo.j
 import { recalc } from './calc.js';
 import { fetchFireBrief, openBrief, closeBrief } from './firebrief.js';
 import { openGlossary, closeGlossary, initGlossary } from './glossary.js';
+import { toggleFmLayer, stepFmDay } from './fmlayer.js';
 
 // ── Clock ──
 function tick() {
