@@ -175,7 +175,9 @@ function makeRawsPopup(s) {
 
 function makeRawsFmBlock(fm) {
   const f = x => x != null ? x.toFixed(1) + '%' : '—';
-  const hr = h => h == null ? '' : ` <span style="color:#888">@${h % 12 || 12}${h < 12 ? 'am' : 'pm'}</span>`;
+  // FEMS forecast rows often carry 0 as a placeholder hour (all zeros on the
+  // last days), so 0 is treated as unknown rather than shown as midnight.
+  const hr = h => !h ? '' : ` <span style="color:#888">@${h % 12 || 12}${h < 12 ? 'am' : 'pm'}</span>`;
   const row = (lbl, r) => r
     ? `<span style="color:#888">${lbl}</span><br>
        Min 1-hr ${f(r.fm1)}${hr(r.t1)} · Min 10-hr ${f(r.fm10)}${hr(r.t10)}<br>
