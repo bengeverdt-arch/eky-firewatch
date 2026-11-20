@@ -166,9 +166,9 @@ function buildCtrl() {
       </span>
     </div>
     <div id="fmLegSt" class="fmleg">
-      <div class="fmleg-lbl">STATIONS · 10-hr % · FEMS forecast</div>
+      <div class="fmleg-lbl">STATIONS · MIN 10-hr % · FEMS forecast</div>
       ${legendBar('fm10', [4, 8, 12, 16, 22])}
-      <div class="fmleg-note">8% = JKL Red Flag 10-hr criterion. Number on dot = 10-hr %.</div>
+      <div class="fmleg-note">Number on dot = day's minimum 10-hr %. 8% = JKL Red Flag 10-hr criterion.</div>
     </div>
     <div id="fmLegGrid" class="fmleg">
       <div class="fmleg-lbl">GRID · 100-hr % · USFS WFAS forecast</div>
