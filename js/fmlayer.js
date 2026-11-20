@@ -211,7 +211,7 @@ function onMapClick(e) {
     ? `<div style="margin-top:6px;border-top:1px solid #444;padding-top:5px">
         <b style="color:#ffab00">Nearest RAWS: ${near.s.name}</b> · ${near.mi.toFixed(0)} mi<br>
         FEMS forecast ${fmtDate(iso)}:<br>
-        1-hr ${f(near.row.fm1)} · 10-hr ${f(near.row.fm10)}<br>
+        Min 1-hr ${f(near.row.fm1)} · Min 10-hr ${f(near.row.fm10)}<br>
         100-hr ${f(near.row.fm100)} · 1000-hr ${f(near.row.fm1000)}
       </div>`
     : `<div style="margin-top:6px;color:#888">No station forecast loaded for this day.</div>`;
