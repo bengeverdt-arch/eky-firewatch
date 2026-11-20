@@ -862,7 +862,9 @@ async function handleFmStations(url) {
     const r = l.replace(/"/g, '').split(',').map(v => v.trim());
     const id = r[I.id];
     if (!id) continue;
-    const rec = { date: r[I.date], fm1: num(r, I.fm1), fm10: num(r, I.fm10), fm100: num(r, I.fm100), fm1000: num(r, I.fm1000) };
+    // FEMS daily summary: 1-hr/10-hr are the day's MINIMUM; tN = hour (0-23) it occurs
+    const rec = { date: r[I.date], fm1: num(r, I.fm1), fm10: num(r, I.fm10), fm100: num(r, I.fm100), fm1000: num(r, I.fm1000),
+                  t1: num(r, I.t1), t10: num(r, I.t10) };
     if (rec.fm1 == null && rec.fm10 == null) continue;
     const st = stations[id] || (stations[id] = { name: r[I.name], obs: null, forecast: [] });
     if (r[I.type] === 'F') st.forecast.push(rec);
