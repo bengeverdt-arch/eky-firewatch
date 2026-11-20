@@ -60,3 +60,23 @@ iframe{width:100%;height:500px;border:none;display:block}
 .qlico{font-size:13px;flex-shrink:0}
 .qln{font-family:var(--mono);font-size:10px;color:var(--text);letter-spacing:.4px;display:block}
 .qld{font-family:var(--mono);font-size:9px;color:var(--muted);display:block;margin-top:1px}
+
+/* Fuel moisture layers — day stepper + legend (top-right, below radar control) */
+#fmCtrl{position:absolute;top:48px;right:10px;z-index:500;width:250px;max-width:calc(100% - 20px);
+  background:rgba(7,9,11,.9);border:1px solid var(--border2);border-radius:5px;
+  padding:7px 10px;font-family:var(--mono);color:var(--muted)}
+html.light #fmCtrl{background:rgba(255,255,255,.94)}
+.fmc-head{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:4px}
+.fmc-title{font-size:8px;letter-spacing:1.2px}
+.fmc-nav{display:flex;align-items:center;gap:2px}
+.fmc-day{font-size:10px;color:var(--text);min-width:112px;text-align:center}
+.fmc-nav .radar-btn:disabled{opacity:.3;cursor:default}
+.fmleg{margin-top:6px}
+.fmleg-lbl{font-size:8px;letter-spacing:.8px;margin-bottom:3px}
+.fmleg-bar{height:8px;border-radius:2px}
+.fmleg-ticks{position:relative;height:11px;font-size:8px;color:var(--text)}
+.fmleg-ticks span{position:absolute;transform:translateX(-50%)}
+.fmleg-ticks span:first-child{transform:none}
+.fmleg-ticks span:last-child{transform:translateX(-100%)}
+.fmleg-note{font-size:8px;line-height:1.35;margin-top:3px}
+.fmgrid-img{image-rendering:pixelated;image-rendering:crisp-edges}
