@@ -13,6 +13,8 @@
  *  GET /perimeters         → Fire perimeters year-to-date (NIFC WFIGS)
  *  GET /fire-brief?lat=&lon= → NWS FWF text product, filtered to the location's fire wx zone
  *  GET /fems-clim?station=&date= → 20-yr ERC/BI history for ±15 days around date
+ *  GET /fm-stations?stations=a,b → Dead FM obs + FEMS forecast for many RAWS at once
+ *  GET /fm-grid?day=0..6     → WFAS 2.5 km 100-hr dead FM forecast grid, clipped to KY
  *  GET /health               → Health check
  */
 
