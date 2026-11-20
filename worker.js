@@ -849,7 +849,8 @@ async function handleFmStations(url) {
   const header = lines[0].replace(/"/g, '').split(',').map(h => h.trim());
   const ci = name => header.indexOf(name);
   const I = { name: ci('StationName'), date: ci('ObservationTime'), type: ci('NFDRType'), id: ci('StationId'),
-              fm1: ci('1HrFM'), fm10: ci('10HrFM'), fm100: ci('100HrFM'), fm1000: ci('1000HrFM') };
+              fm1: ci('1HrFM'), fm10: ci('10HrFM'), fm100: ci('100HrFM'), fm1000: ci('1000HrFM'),
+              t1: ci('Min1HrFMTime'), t10: ci('Min10HrFMTime') };
   const num = (r, i) => {
     if (i < 0) return null;
     const n = parseFloat(r[i]);
