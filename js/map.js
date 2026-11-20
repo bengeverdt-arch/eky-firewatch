@@ -123,7 +123,24 @@ function haverMi(lat1, lon1, lat2, lon2) {
   return R * 2 * Math.asin(Math.sqrt(a));
 }
 
-function makeRawsIcon(isActive) {
+// Station-FM mode (set by fmlayer.js): id → { day, obs, iso, color(v) } or null
+let rawsFm = null;
+
+function makeRawsFmIcon(isActive, fm) {
+  const v = fm?.day?.fm10;
+  const bg = v != null ? fm.color(v) : '#555';
+  const ring = isActive ? '2.5px solid #fff' : '1.5px solid rgba(0,0,0,.55)';
+  const txt = v != null ? Math.round(v) : '—';
+  return L.divIcon({
+    html: `<div style="width:26px;height:26px;border-radius:50%;background:${bg};border:${ring};
+      display:flex;align-items:center;justify-content:center;font:700 11px monospace;color:#111;
+      box-shadow:0 0 6px rgba(0,0,0,.6)">${txt}</div>`,
+    className: '', iconSize: [26, 26], iconAnchor: [13, 13],
+  });
+}
+
+function makeRawsIcon(isActive, id) {
+  if (rawsFm) return makeRawsFmIcon(isActive, rawsFm[id]);
   return isActive
     ? L.divIcon({
         html: `<div style="width:14px;height:14px;border-radius:50%;
