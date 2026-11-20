@@ -96,6 +96,8 @@ const CACHE_TTL = {
   '/perimeters': 1800,  // 30 min - perimeters change slowly
   '/fire-brief':  1800,  // 30 min
   '/fems-clim':   86400, // 24 hr - history only changes once a year
+  '/fm-stations': 1800,  // 30 min - FEMS daily obs + forecast
+  '/fm-grid':     10800, // 3 hr - WFAS grids regenerate once a day
 };
 
 // ─────────────────────────────────────────────
