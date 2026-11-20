@@ -130,6 +130,8 @@ export default {
         case '/perimeters': response = await handlePerimeters();    break;
         case '/fire-brief':  response = await handleFireBrief(url);   break;
         case '/fems-clim':   response = await handleFemsClim(url);   break;
+        case '/fm-stations': response = await handleFmStations(url); break;
+        case '/fm-grid':     response = await handleFmGrid(url);     break;
         case '/health':      response = json({ ok: true, ts: new Date().toISOString(), version: '2.2' }); break;
         default:
           response = json({
